@@ -35,3 +35,33 @@ conda activate SQANTI3.env
 ```
 
 
+### Download Reference Files 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
