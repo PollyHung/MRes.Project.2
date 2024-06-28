@@ -36,7 +36,7 @@ conda activate SQANTI3.env
 
 
 ## Download Reference Files 
-### Primer fasta 
+### primer.fasta
 Website: https://github.com/shizhuoxing/BGI-Full-Length-RNA-Analysis-Pipeline/tree/master
 ```
 nano primer.fa
@@ -50,7 +50,7 @@ GTACTCTGCGTTGATACCACTGCTTACTAGT
 ```
 save file 
 
-### hg38 fasta file
+### hg38.fasta
 Website: https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/
 ```
 wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
@@ -58,7 +58,7 @@ gunzip hg38.fa.gz
 samtools faidx hg38.fa
 ```
 
-### gtf file 
+### annotation.gtf
 Website: https://www.gencodegenes.org/human/
 ```
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_46/gencode.v46.annotation.gtf.gz
