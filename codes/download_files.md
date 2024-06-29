@@ -12,8 +12,8 @@ chmod +x smrtlink-release-sequel2_13.1.0.221970_linux_x86-64_libc-2.17_anydistro
 ```
 
 ### BGI functions
-Website: https://github.com/shizhuoxing/BGI-Full-Length-RNA-Analysis-Pipeline/tree/master for bulk sequencing
-Website: https://github.com/shizhuoxing/scISA-Tools/tree/master for single cell sequencing
+Website: https://github.com/shizhuoxing/BGI-Full-Length-RNA-Analysis-Pipeline/tree/master for bulk sequencing    
+Website: https://github.com/shizhuoxing/scISA-Tools/tree/master for single cell sequencing    
 ```
 git clone https://github.com/shizhuoxing/BGI-Full-Length-RNA-Analysis-Pipeline.git
 mv BGI-Full-Length-RNA-Analysis-Pipeline bgi_commands
@@ -23,7 +23,7 @@ ls bgi_commands/bin
 ```
 
 ### SQUANTI3
-Website: https://github.com/ConesaLab/SQANTI3
+Website: https://github.com/ConesaLab/SQANTI3    
 ```
 wget https://github.com/ConesaLab/SQANTI3/archive/refs/tags/v5.2.1.tar.gz
 tar -xf v5.2.1.tar.gz
