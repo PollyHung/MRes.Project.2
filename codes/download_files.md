@@ -58,14 +58,70 @@ gunzip hg38.fa.gz
 samtools faidx hg38.fa
 ```
 
-### annotation.gtf
+### annotation.gtf and annotation.gff
 Website: https://www.gencodegenes.org/human/
 ```
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_46/gencode.v46.annotation.gtf.gz
 gunzip gencode.v46.annotation.gtf.gz
 chmod +x gencode.v46.annotation.gtf
+
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_46/gencode.v46.annotation.gff3.gz
+gunzip gencode.v46.annotation.gff3.gz
+chmod +x gencode.v46.annotation.gff3
+
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_46/gencode.v46.chr_patch_hapl_scaff.annotation.gtf.gz
+gunzip gencode.v46.chr_patch_hapl_scaff.annotation.gtf.gz
+chmod +x gencode.v46.chr_patch_hapl_scaff.annotation.gtf
+
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_46/gencode.v46.chr_patch_hapl_scaff.annotation.gff3.gz
+gunzip gencode.v46.chr_patch_hapl_scaff.annotation.gff3.gz
+chmod +x gencode.v46.chr_patch_hapl_scaff.annotation.gff3
 ```
 
+### polyA data    
+There are two polyA files required for SQANTI quality control:    
+1. PolyA motif data    
+2. PolyA site data
+```
+wget https://github.com/ConesaLab/SQANTI3/blob/master/data/polyA_motifs/mouse_and_human.polyA_motif.txt
+wget https://polyasite.unibas.ch/download/atlas/2.0/GRCh38.96/atlas.clusters.2.0.GRCh38.96.bed.gz
+gunzip atlas.clusters.2.0.GRCh38.96.bed.gz
+## for the second atlas.cluster.bed file we'll need to modify the missing chr prefix by:
+sed -i 's/^/chr/' atlas.clusters.2.0.GRCh38.96.bed
+```
+and the polyA motif file look something like this: 
+```
+aataaa
+attaaa
+agtaaa
+tataaa
+cataaa
+gataaa
+aatata
+aataca
+aataga
+aaaaag
+actaaa
+aagaaa
+aatgaa
+tttaaa
+aaaaca
+ggggct
+```
+
+#### CAGE peak data  
+Obtained public CAGE peak data for human and mice from the refTSS database supplied in SQANTI3's `data` folder.     
+```
+wget https://github.com/ConesaLab/SQANTI3/blob/master/data/ref_TSS_annotation/human.refTSS_v3.1.hg38.bed
+```
+
+#### Intropolis junction bed file     
+Provided by SQANTI github page in previous version      
+```
+wget https://github.com/Magdoll/images_public/blob/master/SQANTI2_support_data/intropolis.v1.hg19_with_liftover_to_hg38.tsv.min_count_10.modified.gz
+```
+
+#### 
 
 
 
