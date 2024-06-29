@@ -1,8 +1,10 @@
 #!/bin/bash
 
 #PBS -l select=1:ncpus=64:mem=400gb
-#PBS -l walltime=3:00:00          
+#PBS -l walltime=8:00:00          
 #PBS -N preprocess
+
+module load anaconda3/personal
 
 # Read Set_6.txt line by line
 while read -r sample_id; do
