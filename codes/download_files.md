@@ -109,19 +109,18 @@ aaaaca
 ggggct
 ```
 
-#### CAGE peak data  
+### CAGE peak data  
 Obtained public CAGE peak data for human and mice from the refTSS database supplied in SQANTI3's `data` folder.     
 ```
 wget https://github.com/ConesaLab/SQANTI3/blob/master/data/ref_TSS_annotation/human.refTSS_v3.1.hg38.bed
 ```
 
-#### Intropolis junction bed file     
+### Intropolis junction bed file     
 Provided by SQANTI github page in previous version      
 ```
 wget https://github.com/Magdoll/images_public/blob/master/SQANTI2_support_data/intropolis.v1.hg19_with_liftover_to_hg38.tsv.min_count_10.modified.gz
 ```
-
-#### 
+ 
 
 
 
