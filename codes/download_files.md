@@ -34,6 +34,13 @@ conda activate SQANTI3.env
 (SQANTI3.env)$
 ```
 
+### TransDecoder 
+Website: https://github.com/TransDecoder/TransDecoder/wiki
+```
+wget https://github.com/TransDecoder/TransDecoder/archive/refs/tags/TransDecoder-v5.7.1.tar.gz
+tar -xzvf TransDecoder-v5.7.1.tar.gz
+```
+
 
 ## Download Reference Files 
 ### primer.fasta
