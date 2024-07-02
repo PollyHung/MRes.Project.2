@@ -132,6 +132,7 @@ wget https://github.com/Magdoll/images_public/blob/master/SQANTI2_support_data/i
 ```
 
 ### uniprot_sprot.fasta
+Website: https://www.ebi.ac.uk/uniprot/download-center
 ```
 wget ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
 gunzip uniprot_sprot.fasta.gz
