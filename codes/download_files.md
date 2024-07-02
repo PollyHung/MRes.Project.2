@@ -130,7 +130,12 @@ Provided by SQANTI github page in previous version
 ```
 wget https://github.com/Magdoll/images_public/blob/master/SQANTI2_support_data/intropolis.v1.hg19_with_liftover_to_hg38.tsv.min_count_10.modified.gz
 ```
- 
+
+### uniprot_sprot.fasta
+```
+wget ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
+gunzip uniprot_sprot.fasta.gz
+```
 
 
 
