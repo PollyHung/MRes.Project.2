@@ -44,6 +44,11 @@ tar -xzvf TransDecoder-v5.7.1.tar.gz
 conda install bioconda::transdecoder
 ```
 
+### tmhmm
+Website: https://services.healthtech.dtu.dk/services/TMHMM-2.0/
+
+
+
 
 ## Download Reference Files 
 ### primer.fasta
