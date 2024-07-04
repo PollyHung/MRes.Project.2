@@ -143,6 +143,19 @@ wget ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/c
 gunzip uniprot_sprot.fasta.gz
 ```
 
+### mapping_uniprot_to_ensembl
+```
+if(!file.exists("~/MRes.project.2/docs/0_preprocessing/mapping_uniprot_to_ensembl.csv")){
+  mart <- useMart('ENSEMBL_MART_ENSEMBL')
+  mart <- useDataset('hsapiens_gene_ensembl', mart)
+  mapping_id <- getBM(mart = mart,  uniqueRows=TRUE, 
+                      attributes = c('ensembl_gene_id', 'gene_biotype', 'external_gene_name', 
+                                     'uniprot_gn_symbol', 'uniprot_gn_id'))
+  write.csv(mapping_id, "Desktop/mres.project.2/data/1_PacBioProcessing/mapping_uniprot_to_ensembl.csv")
+} else {
+  uniprot2ENSG <- read.csv("~/MRes.project.2/docs/0_preprocessing/mapping_uniprot_to_ensembl.csv")
+}
+```
 
 
 
