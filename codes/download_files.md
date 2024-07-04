@@ -145,6 +145,7 @@ gunzip uniprot_sprot.fasta.gz
 
 ### mapping_uniprot_to_ensembl
 ```
+library(biomaRt)
 if(!file.exists("~/MRes.project.2/docs/0_preprocessing/mapping_uniprot_to_ensembl.csv")){
   mart <- useMart('ENSEMBL_MART_ENSEMBL')
   mart <- useDataset('hsapiens_gene_ensembl', mart)
