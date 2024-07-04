@@ -158,8 +158,18 @@ if(!file.exists("~/MRes.project.2/docs/0_preprocessing/mapping_uniprot_to_ensemb
 }
 ```
 
+### Generating a UniProt out tmhmm regions text
+```
+ROOT="/rds/general/user/ph323/home/MRes.project.2/docs/0_preprocessing"
 
+pfam_domtblout="$ROOT/PFAM/pfam.domtblout"
+pfam_A_hmm="$ROOT/PFAM/Pfam-A.hmm"
+out_tmhmm_regions="$ROOT/PFAM/out_tmhmm_regions.txt"
+protein_sequence="$ROOT/uniprot/human.fasta"
 
+hmmsearch --domtblout "$pfam_domtblout" "$pfam_A_hmm" "$protein_sequence"
+tmhmm "$protein_sequence" > "$out_tmhmm_regions"
+```
 
 
 
