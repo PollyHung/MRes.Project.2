@@ -48,7 +48,11 @@ Instead, what we observed is that ATGGGG overhang are missing here and there and
 Trouble shooting documentation suggests that this may be a problem in sample preparation, specifically something might've gone wrong during the library preparation step due to a degraded Template Switching Oligonucleotides (TSO) batch or lack of TSO.     
 
 ### Solution    
-The proposed solution by trouble shooting guide 
+#### Solution Plan 1:     
+The proposed solution by trouble shooting guide suggests that we should re-prepare the Iso-Seq library using fresh TSO or a new kit and re-sequence. However we are running out of time for the project.     
+#### Solution Plan 2:     
+Use BGI customized pipeline to process the long read sequences. When comparing the output flnc.bam from PacBio IsoSeq3 pipeline vs BGI pipeline, we observed that 
+
 
 
 
