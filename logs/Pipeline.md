@@ -1,4 +1,4 @@
-## Preprocessing with IsoSeq3 pipeline   
+## Pipeline     
 
 ### Section 1 - Preprocessing subreads.bam with BGI pipeline     
 Raw PacBio Iso-Seq data in subreads.bam format were processed using a combination of the [BGI-Full-Length-RNA-Analysis-Pipeline](https://github.com/shizhuoxing/BGI-Full-Length-RNA-Analysis-Pipeline) and the official [PacBio IsoSeq3 pipeline](https://github.com/PacificBiosciences/IsoSeq).  Initially, each sequencing run was processed with ccs to generate HiFi reads (predicted accuracy ≥ Q20) using the parameters: min-passes 0, min-length 50, max-length 21000, and min-rq 0.75. This ensured that the resulting HiFi reads had at least 1 full-length subreads, lengths between 50 and 21000 bp, and a minimum read accuracy of 0.75.     
