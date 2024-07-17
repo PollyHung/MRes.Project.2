@@ -1,6 +1,6 @@
 ## Merged process or separate process samples?      
 
-#### problem:      
+#### Problem:      
 We initially processed our long reads samples separately, however this causes a problem that the pacbio IDs from each samples do not match. Because pacbio IDs were assigned randonly and floats around between different samples. Meaning that PB.100.1 in sample 1 does not label the same transcript or even the same gene for sample 2.      
 Separate processing our samples therefore leads to a problem of us unable to merge the isoform expressions for differential exon expression analysis as the PacBio ID do not match and therefore novel transcripts would be lost as they do not have a consensus ensemble transcript ID we could use as a reference.     
 To mitigate this, I first thought of creating a new mapping ID for different samples so we could merge everything together, but that didn't work out.      
