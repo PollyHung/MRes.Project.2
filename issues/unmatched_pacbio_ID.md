@@ -1,11 +1,12 @@
 ## Issue 1: Unmatched PacBio IDs if processing Long Read samples separately using IsoSeq3-SQANTI3-IsoAnnotLite pipeline    
 
 ### Context:     
-We have processed our long read samples separately following the IsoSeq3-SQANTI3-IsoAnnotLite pipeline, now we want to perform differential exon expression analysis on the samples. We think that tappAS offered a good analysis framework and we want to adopt that framework for our subsequent analysis as it    
+We have processed our long read samples separately following the IsoSeq3-SQANTI3-IsoAnnotLite pipeline, now we want to perform differential exon expression analysis on the samples. We think that tappAS offered a good analysis framework and we want to adopt that framework for our subsequent analysis as it was mentioned in the [PacBio Bioinformatics Application Note](/Mres.Project.2/reference/Application-note-Bioinformatics-tools-for-full-length-isoform-sequencing.pdf) and is capable of identifying both gene and isoform-level differential expression (DGE, DTE, and DTU). tappAS asked for three files as input of analysis: a design file, an expression matrix, and an annotation file in gff3 format.    
 
+The design matrix is just a two column dataframe with column 1 recording sample name and column 2 recording their corresponding group, and the expression matrix is a dataframe with column names being sample names and row names being the PacBio transcript ID. The expression matrix records the isoform expression generated either by kallisto or salmon. As we have performed the SQANTI3 on individal long reads providing corresponding or pooled short reads, we therefore have the isoform expression of each PacBio transcript id stored in the `iso_exp` column of the `qc_classification.txt`. Lastly, the gff3 is produced by IsoAnnotLite (which is run integratively as part of SQANTI3 quality control providing a reference gff3).    
 
 ### Problem Description:    
-However this causes a problem during the differential exon expression analysis step. Specifically, the PacBio IDs from each samples cannot be used universially and is specfic to each sample, that is to say PB.100.1 in sample 1 does not point toward the same gene as PB.100.1 in sample 2. Therefore although we have acquired the isoform expression at transcript level for each sample we cannot merge them into a transcription matrix due to the issue of unmatched PacBio ID.    
+As we have ran our long read samples separately, this causes a problem during the differential exon expression analysis step. Specifically, the PacBio IDs from each samples cannot be used universially and is specfic to each sample, that is to say PB.100.1 in sample 1 does not point toward the same gene as PB.100.1 in sample 2. Therefore although we have acquired the isoform expression at transcript level for each sample we cannot merge them into a transcription matrix due to the issue of unmatched PacBio ID.    
 
 ### Solutions:    
 #### Solution Plan 1:      
