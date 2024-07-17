@@ -35,13 +35,17 @@ Above length                  : 25221 (100.00%)
 Below length                  : 0 (0.00%)
 ```
 When looking through trouble shooting documents by PacBio we found that this issue was described in early SMRT link trouble shooting files (version 6, 7, and 8 only). Specically, they described it as `Iso-Seq reads flagged as 3’--3’ reads in classification step`, with symptoms described matching our case:    
-  Symptoms:     
-  • The majority of Iso-Seq reads are failing in the classification step.    
-  • Lower number of transcripts from Isoseq3.    
-  • The total number of CCS reads look good, but the resulting number of reads with 5' and 3' primer is much lower.    
+
+>  Symptoms:     
+>  • The majority of Iso-Seq reads are failing in the classification step.    
+>  • Lower number of transcripts from Isoseq3.    
+>  • The total number of CCS reads look good, but the resulting number of reads with 5' and 3' primer is much lower.
+
 Following their trouble shooting guide, we inspected ccs.bam > ccs.fasta for a 3'ATGGG overhang of the 5'primer. Typical CCS reads of a proper IsoSeq library should contain: `5' primer → ATGGGG overhang → cDNA sequence → polyA tail → 3' primer` and have 5-6 bp of ATGGGG overhang missing from the 3' end of the 5' primer sequence.     
+
 Instead, what we observed is that ATGGGG overhang are missing here and there and have poly A/T tracks on both side of a "transcript", indicating the presence of random priming. Moreover, different from the problem described in their documentation, we also cannot find our 3'end primer in ccs reads, we counted the number of 5'end primer `AAGCAGTGGTATCAACGCAGAGTACATGGGG` and found them in 276110 sequences where as the 3'end primer `GTACTCTGCGTTGATACCACTGCTTACTAGT` was only found in at the end of 6 sequences in an example ccs.bam. We do see a random insertion of inverse 5'end primer with ATGGGG removed `GTACTCTGCGTTGATACCACTGCTT` (partial 3' primer) randomly inserted across the ccs reads (not locating at the sequence end as they should be).     
-Trouble shooting documentation suggests that this may be a problem in sample preparation, specifically something might've gone wrong during the library preparation step due to a degraded Template Switching Oligonucleotides (TSO) batch or lack of TSO. 
+
+Trouble shooting documentation suggests that this may be a problem in sample preparation, specifically something might've gone wrong during the library preparation step due to a degraded Template Switching Oligonucleotides (TSO) batch or lack of TSO.     
 
 ### Solution    
 The proposed solution by trouble shooting guide 
