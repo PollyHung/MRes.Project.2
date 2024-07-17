@@ -1,4 +1,4 @@
-## Issue 1: Unmatched PacBio IDs if processing Long Read samples separately using IsoSeq3-SQANTI3-IsoAnnotLite pipeline    
+## Issue 2: Unmatched PacBio IDs if processing Long Read samples separately using IsoSeq3-SQANTI3-IsoAnnotLite pipeline    
 
 ### Context:     
 We have processed our long read samples separately following the IsoSeq3-SQANTI3-IsoAnnotLite pipeline, now we want to perform differential exon expression analysis on the samples. We think that tappAS offered a good analysis framework and we want to adopt that framework for our subsequent analysis as it was mentioned in the [PacBio Bioinformatics Application Note](/reference/Application-note-Bioinformatics-tools-for-full-length-isoform-sequencing.pdf) and is capable of identifying both gene and isoform-level differential expression (DGE, DTE, and DTU). [tappAS asked for three files](/reference/5.tappAS_HO.pdf) as input of analysis: a design file, an expression matrix, and an annotation file in gff3 format.    
