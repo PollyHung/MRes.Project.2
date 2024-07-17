@@ -34,7 +34,7 @@ Reads for (B):
 Above length                  : 25221 (100.00%)
 Below length                  : 0 (0.00%)
 ```
-When looking through trouble shooting documents by PacBio we found that this issue was described in early SMRT link trouble shooting files (version 6, 7, and 8 only). Specically, they described it as `Iso-Seq reads flagged as 3’--3’ reads in classification step`, with symptoms described matching our case:    
+When looking through trouble shooting documents by PacBio we found that this issue was described in early [SMRT link trouble shooting files](/reference/SMRT_Link_Troubleshooting_Guide_v701.pdf) (version 6, 7, and 8 only). Specically, they described it as `Iso-Seq reads flagged as 3’--3’ reads in classification step`, with symptoms described matching our case:    
 
 >  Symptoms:     
 >  • The majority of Iso-Seq reads are failing in the classification step.    
