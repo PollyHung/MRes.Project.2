@@ -45,13 +45,9 @@ Following their trouble shooting guide, we inspected ccs.bam > ccs.fasta for a 3
 
 Instead, what we observed is that ATGGGG overhang are missing here and there and have poly A/T tracks on both side of a "transcript", indicating the presence of random priming. Moreover, different from the problem described in their documentation, we also cannot find our 3'end primer in ccs reads, we counted the number of 5'end primer `AAGCAGTGGTATCAACGCAGAGTACATGGGG` and found them in 276110 sequences where as the 3'end primer `GTACTCTGCGTTGATACCACTGCTTACTAGT` was only found in at the end of 6 sequences in an example ccs.bam. We do see a random insertion of inverse 5'end primer with ATGGGG removed `GTACTCTGCGTTGATACCACTGCTT` (partial 3' primer) randomly inserted across the ccs reads (not locating at the sequence end as they should be).     
 
-Trouble shooting documentation suggests that this may be a problem in sample preparation, specifically something might've gone wrong during the library preparation step due to a degraded Template Switching Oligonucleotides (TSO) batch or lack of TSO.     
+Trouble shooting documentation suggests that this may be a problem in sample preparation, specifically something might've gone wrong during the library preparation step due to a degraded Template Switching Oligonucleotides (TSO) batch or lack of TSO. The proposed solution by trouble shooting guide suggests that we should re-prepare the Iso-Seq library using fresh TSO or a new kit and re-sequence. However we are running out of time for the project.      
 
-### Solution    
-#### Solution Plan 1:     
-The proposed solution by trouble shooting guide suggests that we should re-prepare the Iso-Seq library using fresh TSO or a new kit and re-sequence. However we are running out of time for the project.     
-#### Solution Plan 2:     
-Use BGI customized pipeline to process the long read sequences. When comparing the output flnc.bam from PacBio IsoSeq3 pipeline vs BGI pipeline, we observed that using the PacBio IsoSeq3 produces 275 reads compared to 160162 reads by BGI pipeline. The PacBio IsoSeq3 produced flnc.bam > flnc.fasta has typical polyA tails     
+When using BGI customized pipeline to process the long read sequences. When comparing the output flnc.bam from PacBio IsoSeq3 pipeline vs BGI pipeline, we observed that using the PacBio IsoSeq3 produces 275 reads compared to 160162 reads by BGI pipeline. The PacBio IsoSeq3 produced flnc.bam > flnc.fasta has typical polyA tails      
 ```
 >m64048_240607_071033/327773/ccs
 TAGATGTGTCTGGTAGCATGTACCGTTTCAACAGGATGGATGGCCGGCTTGAGCGCACAATGGAGGCTGTGTGTATGGTCATGGAAGCCTTCGAGAAC
