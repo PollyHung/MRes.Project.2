@@ -23,5 +23,31 @@ The output classification table consists of the following main categories of spl
 
 We employed a [customized filtering rule](filter_custom.json) inspired by Veiga et al., (2022). Briefly, FSM: all retained; ISM: filtered out unreliable 3’end (if percentage of genomic A’s in the downstream 20bp window perc_A_dowmstreamTTS > 0.80); NIC: filtered out unreliable 3’end, intron-retention (in subcategory column), minimum coverage below 10; NNC: filtered out unreliable 3’end, intron-retention, junction labelled as RT-switch, minimum coverage below 10, and non-canonical splice sites; the rest of the splicing events are filtered out for intron-retention, junctions labelled as RT-switch, minimum coverage below 10, non-canonical splicing sites.      
 
+### Section 4 - Functional Annotations of Isoforms     
+To understand the potential functional consequences of isoforms from our transcriptome at the protein level, we extracted open reading frames (ORFs; i.e., coding sequences) using TransDecoder and predicted domains using PFAM domain and BLAST, transmembrane regions using TMHMM and hmmer, and subcellular localization using DeepLoc2.      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
