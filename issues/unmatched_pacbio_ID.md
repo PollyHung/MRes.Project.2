@@ -1,15 +1,19 @@
 ## Issue 1: Unmatched PacBio IDs if processing Long Read samples separately using IsoSeq3-SQANTI3-IsoAnnotLite pipeline    
 
-#### Problem Description:   
-Initially we processed our long read samples separately following the IsoSeq3-SQANTI3-IsoAnnotLite pipeline. However this causes a problem during the differential exon expression analysis step. Specifically, the PacBio IDs from each samples cannot be used universially and is specfic to each sample, that is to say PB.100.1 in sample 1 does not point toward the same gene as PB.100.1 in sample 2. Therefore although we have acquired the isoform expression at transcript level for each sample we cannot merge them into a transcription matrix due to the issue of unmatched PacBio ID.    
+### Context:     
+We have processed our long read samples separately following the IsoSeq3-SQANTI3-IsoAnnotLite pipeline, now we want to perform differential exon expression analysis on the samples. We think that tappAS offered a good analysis framework and we want to adopt that framework for our subsequent analysis as it    
 
 
+### Problem Description:    
+However this causes a problem during the differential exon expression analysis step. Specifically, the PacBio IDs from each samples cannot be used universially and is specfic to each sample, that is to say PB.100.1 in sample 1 does not point toward the same gene as PB.100.1 in sample 2. Therefore although we have acquired the isoform expression at transcript level for each sample we cannot merge them into a transcription matrix due to the issue of unmatched PacBio ID.    
 
-
+### Solutions:    
+#### Solution Plan 1:      
 To mitigate this problem, we first thought that merging the qc_corrected.gtf, qc_classification.txt, and qc_junctions.txt (from SQANTI3 quality_control.py) from each individual long read samples. Specifically merging the qc_corrected.gtf first, then identify transcript boxes 
 <img width="800" alt="Screenshot 2024-07-17 at 12 39 21" src="https://github.com/user-attachments/assets/e81400af-1c14-4920-9ce7-679f8ea5e7b4">     
 with each box beginning with a line of transcript followed by several lines of exons. Then removing duplicated boxes and re-order the boxes by their transcript start site, and lastly assigning each box a new PacBio ID. However, soon we found out that PacBio ID assignment was not completely random as we though they would be, they actually reference to reference gene start and end sites meaning that we cannot assign each box a random ID but have to guess if different boxes could potentially be different transcripts of the same gene. And I'm stuck at this step.     
 
+#### Solution Plan 2:     
 Our second plan is to go back to the IsoSeq3 pipeline and merge the flnc.bam files after the step of IsoSeq3 refine and perform IsoSeq3 and SQANTI3 pipeline on the merged files. This method is inspired by a [FAQ]([url](https://app.tappas.org/faqs/)) seen on tappAS website, specifically:    
 <img width="800" alt="Screenshot 2024-07-17 at 12 44 39" src="https://github.com/user-attachments/assets/743d2c9d-c26c-499f-af7c-28b190ac53d4">   
 This method requires us to provide a .fofn file recording the pathway toward each flnc.bam. However, because we didn't use the PacBio IsoSeq3 pipeline from beginning to end but rather acquired our flnc.bam through a [customed script]([url](https://github.com/shizhuoxing/BGI-Full-Length-RNA-Analysis-Pipeline.git)) provided by BGI. Therefore when we tried to perform     
