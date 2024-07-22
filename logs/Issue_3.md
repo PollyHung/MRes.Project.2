@@ -15,7 +15,8 @@ Step 1: activate an environment, python version 3.11.6
 python3 -m venv env
 source env/bin/activate
 ```
-Step 2: download and install latest htslib     
+Step 2: module load htslib 
+Download and install if it does not exist    
 ```
 curl -OL https://github.com/samtools/htslib/releases/download/1.13/htslib-1.13.tar.bz2
 tar -xf htslib-1.13.tar.bz2  # extract archive
@@ -23,6 +24,10 @@ cd htslib-1.13  # change into htslib source directory
 ./configure --prefix=$HOME/install/htslib-1.13
 make
 make install
+```
+module load if it already exist 
+```
+module load htslib
 ```
 Step 3: download the majiq packages from the bitbucket website    
 *do not directly use their recommended code pip install git+https://bitbucket.org/biociphers/majiq_academic.git, it won't work*
@@ -38,8 +43,10 @@ Step 4: Install the majiq packages
 remember prior to installation you have to export the htslib pathway to the package you installed in step 1. 
 ```
 cd majiq_academic/
-export HTSLIB_LIBRARY_DIR=$HOME/install/htslib-1.13/lib
-export HTSLIB_INCLUDE_DIR=$HOME/install/htslib-1.13/include
+#export HTSLIB_LIBRARY_DIR=$HOME/install/htslib-1.20/lib
+#export HTSLIB_INCLUDE_DIR=$HOME/install/htslib-1.20/include
+export HTSLIB_LIBRARY_DIR=/apps/htslib/1.3.2/lib
+export HTSLIB_INCLUDE_DIR=/apps/htslib/1.3.2/include
 pip install .
 ```
 
@@ -47,9 +54,49 @@ pip install .
 Starting with MAJIQ version 2.5, academic and commercial versions require providing a license file for use. Please note that the software will not function without providing the license file.            
 In order to support usage of the license with minimal disruption to various workflow use cases, we provide many methods to provide the license when running majiq or voila:      
 1. Provide the switch --license to majiq or voila with an explicit path to the license file    
-2. Set the environment variable MAJIQ_LICENSE_FILE with the explicit path to the license file    
+2. Set the environment variable MAJIQ_LICENSE_FILE with the explicit path to the license file
 3. Check the current working directory for any file which begins with "majiq_license"    
 4. Check the users's home directory for any file which begins with "majiq_license"    
 License is downloaded to the `majiq_academic` folder in the name of `majiq_license_academic_official.lic`      
+
+### How does MAJIQ work?      
+1. MAJIQ Builder: Uses RNA-Seq (BAM files) and a transcriptome annotation file (GFF/GTF) to define splice graphs and known/novel Local Splice Variations (LSV).        
+2. MAJIQ Quantifier: Quantifies relative abundance (PSI) of LSVs and changes in relative LSV abundance (delta PSI) between conditions with or without replicates. Used with one or more of the outputs from the builder.        
+3. Voila: Different modes for converting the quantified results into human usable output. Can make TSV, Modulized, or Visual interactive output.
+
+##### Step 0: File preparations       
+BAM: if bam file not exist, preprocess them by STAR or bbduk to produce a .bam file along with .bam.bai     
+GFF3: this is a gene annotation database with gene names exactly matching the gene names from your bam file.       
+We have prepared our bam file from subreads.bam using ccs, and now we have ccs.bam and ccs.bam.bai ready to go.    
+GFF3 is created by IsoAnnotLite      
+```
+PB.1.1	tappAS	transcript	1	1805	.	-	.	ID=novel; primary_class=novel_not_in_catalog; PosType=T
+PB.1.1	tappAS	gene	1	1805	.	-	.	ID=WASH7P; Name=WASH7P; PosType=T
+PB.1.1	tappAS	CDS	175	672	.	-	.	ID=Protein_PB.1.1; Name=Protein_PB.1.1; Desc=Protein_PB.1.1; PosType=T
+PB.1.1	UTRsite	3UTRmotif	17349	17355	.	-	.	ID=U0025; Name=GY-BOX; Desc=GY-Box (GY); PosType=T
+PB.1.1	RepeatMasker	repeat	16713	16744	.	-	.	ID=Simple_repeat; Name=Simple_repeat; Desc=(CAC)n; PosType=T
+PB.1.1	RepeatMasker	repeat	15798	15855	.	-	.	ID=Simple_repeat; Name=Simple_repeat; Desc=(AGCAGC)n; PosType=T
+PB.1.1	tappAS	genomic	1	1	.	-	.	Chr=chr1; PosType=G
+PB.1.1	tappAS	exon	18913	19194	.	-	.	Chr=chr1; PosType=G
+PB.1.1	tappAS	exon	18268	18369	.	-	.	Chr=chr1; PosType=G
+PB.1.1	tappAS	exon	17915	18061	.	-	.	Chr=chr1; PosType=G
+PB.1.1	tappAS	exon	17606	17742	.	-	.	Chr=chr1; PosType=G
+PB.1.1	tappAS	exon	17233	17368	.	-	.	Chr=chr1; PosType=G
+PB.1.1	tappAS	exon	16858	17055	.	-	.	Chr=chr1; PosType=G
+PB.1.1	tappAS	exon	16607	16765	.	-	.	Chr=chr1; PosType=G
+PB.1.1	tappAS	exon	15796	15947	.	-	.	Chr=chr1; PosType=G
+PB.1.1	tappAS	exon	14970	15038	.	-	.	Chr=chr1; PosType=G
+PB.1.1	tappAS	exon	14407	14829	.	-	.	Chr=chr1; PosType=G
+```
+
+
+
+
+
+
+
+
+
+
 
 
