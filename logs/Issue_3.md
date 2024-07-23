@@ -43,10 +43,8 @@ Step 4: Install the majiq packages
 remember prior to installation you have to export the htslib pathway to the package you installed in step 1. 
 ```
 cd majiq_academic/
-#export HTSLIB_LIBRARY_DIR=$HOME/install/htslib-1.20/lib
-#export HTSLIB_INCLUDE_DIR=$HOME/install/htslib-1.20/include
-export HTSLIB_LIBRARY_DIR=/apps/htslib/1.3.2/lib
-export HTSLIB_INCLUDE_DIR=/apps/htslib/1.3.2/include
+export HTSLIB_LIBRARY_DIR=$HOME/install/htslib-1.13/lib
+export HTSLIB_INCLUDE_DIR=$HOME/install/htslib-1.13/include
 pip install .
 ```
 
