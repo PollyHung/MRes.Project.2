@@ -62,32 +62,8 @@ License is downloaded to the `majiq_academic` folder in the name of `majiq_licen
 2. MAJIQ Quantifier: Quantifies relative abundance (PSI) of LSVs and changes in relative LSV abundance (delta PSI) between conditions with or without replicates. Used with one or more of the outputs from the builder.        
 3. Voila: Different modes for converting the quantified results into human usable output. Can make TSV, Modulized, or Visual interactive output.
 
-##### Step 0: File preparations       
-BAM: if bam file not exist, preprocess them by STAR or bbduk to produce a .bam file along with .bam.bai     
-GFF3: this is a gene annotation database with gene names exactly matching the gene names from your bam file.       
-We have prepared our bam file from subreads.bam using ccs, and now we have ccs.bam and ccs.bam.bai ready to go.    
-GFF3 is created by IsoAnnotLite      
-```
-PB.1.1	tappAS	transcript	1	1805	.	-	.	ID=novel; primary_class=novel_not_in_catalog; PosType=T
-PB.1.1	tappAS	gene	1	1805	.	-	.	ID=WASH7P; Name=WASH7P; PosType=T
-PB.1.1	tappAS	CDS	175	672	.	-	.	ID=Protein_PB.1.1; Name=Protein_PB.1.1; Desc=Protein_PB.1.1; PosType=T
-PB.1.1	UTRsite	3UTRmotif	17349	17355	.	-	.	ID=U0025; Name=GY-BOX; Desc=GY-Box (GY); PosType=T
-PB.1.1	RepeatMasker	repeat	16713	16744	.	-	.	ID=Simple_repeat; Name=Simple_repeat; Desc=(CAC)n; PosType=T
-PB.1.1	RepeatMasker	repeat	15798	15855	.	-	.	ID=Simple_repeat; Name=Simple_repeat; Desc=(AGCAGC)n; PosType=T
-PB.1.1	tappAS	genomic	1	1	.	-	.	Chr=chr1; PosType=G
-PB.1.1	tappAS	exon	18913	19194	.	-	.	Chr=chr1; PosType=G
-PB.1.1	tappAS	exon	18268	18369	.	-	.	Chr=chr1; PosType=G
-PB.1.1	tappAS	exon	17915	18061	.	-	.	Chr=chr1; PosType=G
-PB.1.1	tappAS	exon	17606	17742	.	-	.	Chr=chr1; PosType=G
-PB.1.1	tappAS	exon	17233	17368	.	-	.	Chr=chr1; PosType=G
-PB.1.1	tappAS	exon	16858	17055	.	-	.	Chr=chr1; PosType=G
-PB.1.1	tappAS	exon	16607	16765	.	-	.	Chr=chr1; PosType=G
-PB.1.1	tappAS	exon	15796	15947	.	-	.	Chr=chr1; PosType=G
-PB.1.1	tappAS	exon	14970	15038	.	-	.	Chr=chr1; PosType=G
-PB.1.1	tappAS	exon	14407	14829	.	-	.	Chr=chr1; PosType=G
-```
-
-
+### Installation Issues 
+See [installation.log](/logs/attachments/installation.log) for detail, but in summary the htslib failed during function activation. There were no problem in installation itself, but upon calling the function, there is an error.    
 
 
 
