@@ -65,7 +65,18 @@ License is downloaded to the `majiq_academic` folder in the name of `majiq_licen
 ### Installation Issues 
 See [installation.log](/logs/attachments/installation.log) for detail, but in summary the htslib failed during function activation. There were no problem in installation itself, but upon calling the function, there is an error.    
 
+### Solution:    
+Asked ICT team to help with the installation    
+```
+module load tools/prod
+module load anaconda3/personal
+module load GCC/11.3.0
+source activate RCS_majiq2
+export HTSLIB_LIBRARY_DIR=/rds/general/user/ph323/home/RCS_help/install/lib
+export HTSLIB_INCLUDE_DIR=/rds/general/user/ph323/home/RCS_help/install/include
 
+After above commands, if you type majiq --help, it should work.
+```
 
 
 
