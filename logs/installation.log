@@ -1,0 +1,93 @@
+(base) bash-4.4$ pwd
+/rds/general/user/ph323/home
+(base) bash-4.4$ source majiq/bin/activate
+(majiq) (base) bash-4.4$ cd ~/MRes.project.2/codes/0_packages/majiq_academic/
+(majiq) (base) bash-4.4$ export HTSLIB_LIBRARY_DIR=$HOME/install/htslib-1.13/lib
+(majiq) (base) bash-4.4$ export HTSLIB_INCLUDE_DIR=$HOME/install/htslib-1.13/include
+(majiq) (base) bash-4.4$ pip install .
+Processing /rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... done
+  Preparing metadata (pyproject.toml) ... done
+Processing ./voila (from rna_majiq_meta==2.5.0+scmfallback)
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... done
+  Preparing metadata (pyproject.toml) ... done
+Processing ./majiq (from rna_majiq_meta==2.5.0+scmfallback)
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... done
+  Preparing metadata (pyproject.toml) ... done
+Requirement already satisfied: numpy==2.0.0 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-majiq@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/majiq/->rna_majiq_meta==2.5.0+scmfallback) (2.0.0)
+Requirement already satisfied: scipy==1.14.0 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-majiq@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/majiq/->rna_majiq_meta==2.5.0+scmfallback) (1.14.0)
+Requirement already satisfied: smmap2==2.0.5 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-majiq@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/majiq/->rna_majiq_meta==2.5.0+scmfallback) (2.0.5)
+Requirement already satisfied: Click==7.1.2 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (7.1.2)
+Requirement already satisfied: cryptography==41.0.5 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (41.0.5)
+Requirement already satisfied: Flask==1.1.4 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (1.1.4)
+Requirement already satisfied: Flask-Session==0.3.1 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (0.3.1)
+Requirement already satisfied: Flask-WTF==0.14.2 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (0.14.2)
+Requirement already satisfied: gitdb2==2.0.6 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (2.0.6)
+Requirement already satisfied: GitPython==3.0.5 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (3.0.5)
+Requirement already satisfied: gtfparse==2.0.1 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (2.0.1)
+Requirement already satisfied: gunicorn==19.9.0 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (19.9.0)
+Requirement already satisfied: h5py==3.11.0 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (3.11.0)
+Requirement already satisfied: intervaltree==3.1.0 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (3.1.0)
+Requirement already satisfied: itsdangerous==1.1.0 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (1.1.0)
+Requirement already satisfied: Jinja2==2.11.1 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (2.11.1)
+Requirement already satisfied: MarkupSafe==1.1.1 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (1.1.1)
+Requirement already satisfied: networkx==3.3 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (3.3)
+Requirement already satisfied: pandas==2.2.2 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (2.2.2)
+Requirement already satisfied: polars==0.15.9 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (0.15.9)
+Requirement already satisfied: psutil==5.6.7 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (5.6.7)
+Requirement already satisfied: pyarrow==16.1.0 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (16.1.0)
+Requirement already satisfied: requests==2.31.0 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (2.31.0)
+Requirement already satisfied: six==1.14.0 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (1.14.0)
+Requirement already satisfied: tqdm==4.66.1 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (4.66.1)
+Requirement already satisfied: waitress==1.1.0 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (1.1.0)
+Requirement already satisfied: Werkzeug==0.16.0 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (0.16.0)
+Requirement already satisfied: WTForms==2.2.1 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (2.2.1)
+Requirement already satisfied: cffi>=1.12 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from cryptography==41.0.5->rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (1.16.0)
+Requirement already satisfied: sortedcontainers<3.0,>=2.0 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from intervaltree==3.1.0->rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (2.4.0)
+Requirement already satisfied: python-dateutil>=2.8.2 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from pandas==2.2.2->rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (2.9.0.post0)
+Requirement already satisfied: pytz>=2020.1 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from pandas==2.2.2->rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (2024.1)
+Requirement already satisfied: tzdata>=2022.7 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from pandas==2.2.2->rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (2024.1)
+Requirement already satisfied: charset-normalizer<4,>=2 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from requests==2.31.0->rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (3.3.2)
+Requirement already satisfied: idna<4,>=2.5 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from requests==2.31.0->rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (3.7)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from requests==2.31.0->rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (2.2.2)
+Requirement already satisfied: certifi>=2017.4.17 in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from requests==2.31.0->rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback) (2024.7.4)
+Requirement already satisfied: pycparser in /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages (from cffi>=1.12->cryptography==41.0.5->rna-voila@ file://localhost/rds/general/user/ph323/home/MRes.project.2/codes/0_packages/majiq_academic/voila/->rna_majiq_meta==2.5.0+scmfallback)(2.22)
+Building wheels for collected packages: rna_majiq_meta, rna-majiq, rna-voila
+  Building wheel for rna_majiq_meta (pyproject.toml) ... done
+  Created wheel for rna_majiq_meta: filename=rna_majiq_meta-2.5.0+scmfallback-py3-none-any.whl size=1465 sha256=47eea616b1b72e48b25c624a035bfb36f8cce2551a8ed78a317e218a824d064d
+  Stored in directory: /var/tmp/pbs.9808961.pbs/pip-ephem-wheel-cache-o8zdz5s0/wheels/ee/36/a4/4e0bbea903e7d5757b2339888884a31dfb55447eb3f00fbd02
+  Building wheel for rna-majiq (pyproject.toml) ... done
+  Created wheel for rna-majiq: filename=rna_majiq-2.5.6+scmfallback-cp311-cp311-linux_x86_64.whl size=3634828 sha256=2612f422fe5f34b5ae465d4ca9ffb20b6660b51b6b513ca7edc97df31c38c01f
+  Stored in directory: /var/tmp/pbs.9808961.pbs/pip-ephem-wheel-cache-o8zdz5s0/wheels/e5/4d/49/24e40fb42e76f937421affed502e3732450c90d7c5aa39bebe
+  Building wheel for rna-voila (pyproject.toml) ... done
+  Created wheel for rna-voila: filename=rna_voila-2.5.6+scmfallback-py3-none-any.whl size=2401933 sha256=fae8f32a7749f8e3231b14e5fa790edc5104b13c5f09bb9a2d9a1d0dff1929f4
+  Stored in directory: /var/tmp/pbs.9808961.pbs/pip-ephem-wheel-cache-o8zdz5s0/wheels/dc/72/73/fca50d00cbba39d91fcdd0b8db50ea34ff424152a174e00dca
+Successfully built rna_majiq_meta rna-majiq rna-voila
+Installing collected packages: rna-voila, rna-majiq, rna_majiq_meta
+  Attempting uninstall: rna-voila
+    Found existing installation: rna_voila 2.5.6+scmfallback
+    Uninstalling rna_voila-2.5.6+scmfallback:
+      Successfully uninstalled rna_voila-2.5.6+scmfallback
+  Attempting uninstall: rna-majiq
+    Found existing installation: rna_majiq 2.5.6+scmfallback
+    Uninstalling rna_majiq-2.5.6+scmfallback:
+      Successfully uninstalled rna_majiq-2.5.6+scmfallback
+  Attempting uninstall: rna_majiq_meta
+    Found existing installation: rna_majiq_meta 2.5.0+scmfallback
+    Uninstalling rna_majiq_meta-2.5.0+scmfallback:
+      Successfully uninstalled rna_majiq_meta-2.5.0+scmfallback
+Successfully installed rna-majiq-2.5.6+scmfallback rna-voila-2.5.6+scmfallback rna_majiq_meta-2.5.0+scmfallback
+
+[notice] A new release of pip is available: 23.2.1 -> 24.1.2
+[notice] To update, run: pip install --upgrade pip
+(majiq) (base) bash-4.4$ majiq --help
+Traceback (most recent call last):
+  File "/rds/general/user/ph323/home/majiq/bin/majiq", line 5, in <module>
+    from rna_majiq.run_majiq import main
+  File "/rds/general/user/ph323/home/majiq/lib/python3.11/site-packages/rna_majiq/run_majiq.py", line 12, in <module>
+    from rna_majiq.src.build import build
+ImportError: /rds/general/user/ph323/home/majiq/lib/python3.11/site-packages/rna_majiq/src/build.cpython-311-x86_64-linux-gnu.so: undefined symbol: hts_tpool_init
+(majiq) (base) bash-4.4$
