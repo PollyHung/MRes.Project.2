@@ -79,6 +79,11 @@ After above commands, if you type majiq --help, it should work.
 ```
 
 
+Tried for 2.5 days and CANNOT GET IT WORK!!!!!
+Day 1: try installing on local computer, ended up deleting R and all relevant environment and rebuilt it from start but still receives error xx.dylib, building for macOS-x86_64 but attempting to link with file built for macOS-arm64
+Day 2: try installing on HPC, successfully installed but cannot correctly import htslib for some reason and keep returning import build ImportError:/rds/general/user/ph323/home/env/lib/python3.11/site-packages/rna_majiq/src/build.cpython-311-x86_64-linux-gnu.so: undefined symbol: hts_tpool_init. Uninstalled htslib and re-installed various versions of it, didn’t work. Point toward conda htslib package, didn’t work. Tried looking for similar issues in google group but got no solutions. 
+
+![image](https://github.com/user-attachments/assets/c612e9c4-9181-46fd-a8af-146eccb89be5)
 
 
 
