@@ -85,6 +85,63 @@ Day 2: try installing on HPC, successfully installed but cannot correctly import
 
 ![image](https://github.com/user-attachments/assets/c612e9c4-9181-46fd-a8af-146eccb89be5)
 
+#### Ask:     
+```
+I have: 
+Raw Data 
+Long reads: 19 cancer samples + 6 normal samples 
+Short reads: 17 cancer samples (matched to the 17/19 long read samples)   
+
+Processed Data:  
+Long reads processed by IsoSeq3 > SQANTI3 > IsoAnnotLite framework 
+1. 25 ccs.bam (hifi reads from 25 raw pacbio subreads.bam) 
+2. 1 clustered.bam from clustering all long reads flnc.bam (downstream of ccs.bam) together  
+3. classification.txt, filtered.gtf, qc.gff3, and other SQANTI3 outputs from the merged long reads. 
+Short reads: 
+1. STAR alignment outputs done during SQANTI3 (Aligned.sortedByCoord.out.bam, SJ.out.tab, etc.)     
+
+I understand: 
+MAJIQ is designed for short reads, however they haved developed a new tool called MAJIQ-L which works for long reads 
+This what they said on google group: 
+
+        Thanks for your interest in MAJIQ-L! I apologize for the late response. 
+        To use the unified visualization in MAJIQ-L, you need two components, 
+        MAJIQ's outputs and LR tool's (IsoQuant in your case) outputs.
+        
+        MQJIQ outputs: .psi voila and splicegraph
+        IsoQuant outputs: GTF file with discovered expressed transcript and TSV 
+        file indicating which reads contributed to transcript models
+        
+        The former file ends with .transcript_models.gtf and the latter ends with 
+        .transcript_model_reads.tsv. Here is an example command option to generate 
+        .lr.voila file and visualize it.
+        
+        voila lr 
+        --lr-gtf-file /PAHT/TO/SAMPLE_ID.transcript_models.gtf 
+        --lr-tsv-file /PAHT/TO/SAMPLE_ID.transcript_model.reads.tsv 
+        --voila-file /PAHT/TO/SAMPLE_ID.psi.voila 
+        -sg /PATH/TO/splicegraph.sql 
+        -o OUTPUT_FOLDER/lr.voila
+        
+        voila view 
+        /PATH/TO/splicegraph.sql 
+        /PAHT/TO/SAMPLE_ID.psi.voila 
+        /PATH/TO/SAMPLE_ID.lr.voila 
+        --host 0.0.0.0
+        
+        I hope this helps and let me know if you have any other questions.
+
+I want to: 
+1. Use MAJIQ to discover differential alternative splicing events happening in my data 
+
+Ask: 
+1. Can I use MAJIQ on my cancer only short reads and then input that to MAJIQ-L along with SQANTI3 output gtf? 
+2. Do you know anyone who have done this before? 
+
+In case you don't have access to MAJIQ-L paper, I have uploaded that for your reference 
+```
+
+
 
 
 
