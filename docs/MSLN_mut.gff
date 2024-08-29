@@ -1,3 +1,6 @@
+browser position chr16:759178-770797
+track name=MSLN description="AS in MSLN" 
+#seqname	source	feature	start	end	score	strand	frame	group
 chr16	HAVANA	exon	760734	760821	.	+	.	A3:chr16:768379:768648:+:alternative1
 chr16	HAVANA	exon	761073	761174	.	+	.	A3:chr16:768379:768648:+:alternative1
 chr16	HAVANA	exon	762672	762765	.	+	.	A3:chr16:768379:768648:+:alternative1
