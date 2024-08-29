@@ -1,5 +1,5 @@
 browser position chr16:759178-770797
-track name="MSLN A3" description="MSLN A3 splicing events" visibility=2 type=gff
+track bigDataUrl=<https://github.com/PollyHung/MRes.Project.2/edit/main/docs/MSLN_A3.gff> name="MSLN A3" description="MSLN A3 splicing events" visibility=2 type=gff
 chr16	HAVANA	exon	760734	760821	NA	+	NA	ENSG00000102854.16	ENST00000545450.7
 chr16	HAVANA	exon	761073	761174	NA	+	NA	ENSG00000102854.16	ENST00000545450.7
 chr16	HAVANA	exon	762672	762765	NA	+	NA	ENSG00000102854.16	ENST00000545450.7
