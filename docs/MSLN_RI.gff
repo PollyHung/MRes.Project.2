@@ -1,3 +1,4 @@
+browser position chr16:759178-770797
 track name="MSLN RI" description="MSLN RI splicing events" visibility=2 type=gff
 chr16	HAVANA	exon	760734	760821	NA	+	NA	ENSG00000102854.16	ENST00000545450.7
 chr16	HAVANA	exon	761073	761174	NA	+	NA	ENSG00000102854.16	ENST00000545450.7
