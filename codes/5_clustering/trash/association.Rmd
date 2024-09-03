@@ -1,0 +1,393 @@
+---
+title: "Module Eigen-Isoform Association Analysis"
+author: "You"
+date: "2024-08-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(caret)
+library(magrittr)
+library(DEXSeq)
+library(dynamicTreeCut)
+library(gplots)
+library(WGCNA)
+library(survival)
+library(MCPcounter)
+library(tximport)
+library(survminer)
+library(rtracklayer)
+library(tidyverse)
+```
+
+## Load data        
+We used isoform count matrix quantified from PacBio long reads by `quantify` function from package `flair`. Raw count matrix was first filtered to remove isoforms with count 0 across all samples, then counts matix is normalized by TPM using `DEXSeq` package and no missing values were identified. To facilitate efficient WGCNA network we performed feature selection prior to establishing gene module networks. Features selection was carried out by building a random forest model predicting tumor samples from normal samples and features with feature importance ≥ 1 in this model were selected for subsequent WGCNA network construction. In total 202 isoforms/13224 isoforms were selected. WGCNA model were built using a soft-thresholding power of 14 to ensure Scale Free Topology Model Fit, the network is signed (meaning that positive and negative association between modules will be distinguished in additional to quantifying the association strength). Minimum module size of 20 is selected to prevent formation of mini modules that does not have much biological meanings (as per the default parameter of WGCNA blockwise module function). Lastly a merge dendrogram cut height of 0.25 for module merging is set.\
+WGCNA identified 3 modules with size 61, 115, and 26.       
+
+```{r eval=TRUE, include=TRUE}
+load("/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/wgcna.rds")
+normal <- rownames(input_mat)[grepl("FN", rownames(input_mat))]
+tumour <- setdiff(rownames(input_mat), normal)
+```
+
+## Question 1: is the eigen-isoform expression different in cancer vs normal samples?       
+
+We first want to understand whether these modules distinguishes cancer from normal samples. We therefore used wilcox test to test how the module eigenvalues differ between normal and tumour samples. Module eigen-values describes the module eigen-gene (in our case module eigen-isoform), which is essentially an aggregated reprentative "isoform" that summarises the module behaviour.        
+```{r eval=TRUE, include=FALSE}
+load("/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/module_eigenvalue_lr.Rd")
+```
+
+```{r eval=FALSE, include=TRUE}
+MEs0 <- moduleEigengenes(input_mat, mergedColors)$eigengenes %>% orderMEs()
+```
+
+```{r eval=TRUE, include=TRUE}
+p_val <- data.frame(module = c("MEblue", "MEturquoise", "MEgrey"), 
+                    pval = c(wilcox.test(MEs0[normal, "MEblue"], MEs0[tumour, "MEblue"])$p.value, 
+                             wilcox.test(MEs0[normal, "MEturquoise"], MEs0[tumour, "MEturquoise"])$p.value, 
+                             wilcox.test(MEs0[normal, "MEgrey"], MEs0[tumour, "MEgrey"])$p.value))
+p_val$padj <- p.adjust(p_val$pval, method = "fdr")
+print(p_val)
+```
+
+```{r echo=FALSE, fig.dim=c(3,2)}
+n_modules <- ncol(MEs0) %>% as.numeric()
+plot_data <- data.frame(Sample = rep(c(normal, tumour), n_modules),
+                        ModuleEigengene = c(MEs0$MEblue, MEs0$MEturquoise, MEs0$MEgrey),
+                        Group = rep(c(rep("Normal", length(normal)), rep("Tumour", length(tumour))), n_modules),
+                        Module = rep(c("MEblue", "MEturquoise", "MEgrey"), each = nrow(input_mat)))
+p <- ggplot(plot_data, aes(x = Group, y = ModuleEigengene, fill = Group)) +
+  geom_boxplot() + theme_bw() + facet_wrap(~ Module) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = NULL, y = "eigen-isoform exp") +
+  scale_fill_manual(values = c("salmon", "lightblue")) +
+  guides(fill = "none")
+print(p)
+```
+
+We demonstrated that these three modules are differentially expressed between normal and tumour samples.        
+
+## Question 2: is this module expression associated with patient survival?        
+
+To understand whether each module expression is associated with patient survival, we will perform cox proportional hazards regression analysis between module eigenvalue against both overall and progression free survival. We have 25 samples of long reads and only 19 of them are tumour samples, and 18 of them have matched survival data. In addition we also have 59 short reads of tumour samples with 54 matched survival data, all of which have isoform expression matrix quantified using `salmon` package. We therefore will apply `coxph` to long read samples first and validate it using short read samples.       
+
+#### Long Read Samples        
+```{r eval=TRUE, include=FALSE}
+load("/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/survival_lr.Rd")
+```
+
+```{r eval=FALSE, include=TRUE}
+survival <- read.table("/Volumes/Wild Flower/OV_SpliceVariants/data/0_samples/hh_ova_surv.txt", 
+                       header = TRUE)
+mapping <- read.csv("/Volumes/Wild Flower/OV_SpliceVariants/data/0_samples/mapping.csv") %>% 
+  dplyr::select(Sample, ICBRC) %>% 
+  dplyr::mutate(Sample = gsub(" |_", "-", Sample)) %>% 
+  dplyr::filter(Sample %in% rownames(MEs0))
+survival <- merge(survival, mapping, by.x = "row.names", by.y = "ICBRC") 
+survival <- merge(survival, MEs0, by.x = "Sample", by.y = "row.names")
+survival <- survival %>% dplyr::rename(patient_id = Row.names, sample_id = Sample) 
+print(head(survival))
+save(list = "survival", file = "/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/survival_lr.Rd")
+```
+
+None of the overall survival analysis seem to be significant enough to suggest module's association with either overall survival nor progression free survival          
+```{r eval=TRUE, include=TRUE}
+os_surv <- Surv(time = survival$os_time, event = survival$os_event)
+os <- rbind(summary(coxph(os_surv~MEblue, data = survival))$coefficients,  
+            summary(coxph(os_surv~MEturquoise, data = survival))$coefficients, 
+            summary(coxph(os_surv~MEgrey, data = survival))$coefficients) %>% as.data.frame()
+os$p_adj <- p.adjust(os$`Pr(>|z|)`)
+print(os)
+```
+
+```{r eval=TRUE, include=TRUE}
+pfs_surv <- Surv(time = survival$pfs_time, event = survival$pfs_event)
+pfs <- rbind(summary(coxph(pfs_surv~MEblue, data = survival))$coefficients,  
+            summary(coxph(pfs_surv~MEturquoise, data = survival))$coefficients, 
+            summary(coxph(pfs_surv~MEgrey, data = survival))$coefficients) %>% as.data.frame()
+pfs$p_adj <- p.adjust(pfs$`Pr(>|z|)`)
+print(pfs)
+#save(list = c("os", "pfs"), file = "/Volumes/Wild Flower/OV_SpliceVariants/data/6_association/survival_by_module.Rd")
+```
+
+```{r, fig.dim=c(5,6)}
+survival$bi_MEturquoise <- ifelse(survival$MEturquoise > quantile(survival$MEturquoise)[4], "high", "low")
+fit <- survfit(os_surv~bi_MEturquoise, data = survival)
+p <- ggsurvplot(fit, data = survival, pval = TRUE, conf.int = TRUE,
+           risk.table = TRUE, 
+           risk.table.col = "strata", 
+           ggtheme = theme_bw(base_size = 16))
+print(p)
+```
+
+#### Short Read Samples        
+*Probably more precise than expression quantified from long reads, even SQANTI3 calculates isoform expression quantification using short read sequencing data and not long reads.*   
+```{r eval=TRUE, include=FALSE}
+load("/Volumes/Wild Flower/OV_SpliceVariants/data/3_salmon/pacbio/normalized.rds")
+```
+
+```{r eval=FALSE, include=TRUE}
+files <- list.files(path = "/Volumes/Wild Flower/OV_SpliceVariants/data/3_salmon/pacbio/output", 
+                    pattern = ".sf", full.names = TRUE, recursive = TRUE)
+names(files) <- stringr::str_split(files, pattern = "/", simplify = TRUE)[,9] %>%
+  stringr::str_replace("_quant", "")
+shortRead_tpm <- tximport(files, type = "salmon", txIn=TRUE, txOut = TRUE)
+input_mat_sr <- shortRead_tpm$abundance[colnames(input_mat), ] %>% t()
+survival <- read.table("/Volumes/Wild Flower/OV_SpliceVariants/data/0_samples/hh_ova_surv.txt", 
+                       header = TRUE)
+mapping <- read.csv("/Volumes/Wild Flower/OV_SpliceVariants/data/0_samples/mapping.csv") %>% 
+  dplyr::select(X.1, ICBRC) %>% 
+  dplyr::filter(X.1 %in% rownames(input_mat_sr))
+survival <- merge(mapping, survival, by.x = "ICBRC", by.y = "row.names")
+```
+
+We will calculate the module eigengenes by using `moduleEigengenes` function from WGCNA, just like how we got module eigengenes from the long reads as well.         
+```{r eval=TRUE, include=FALSE}
+load("/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/module_eigenvalue_sr.Rd")
+load("/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/survival_sr.Rd")
+```
+
+```{r eval=FALSE, include=TRUE}
+MEs0_sr <- moduleEigengenes(input_mat_sr, mergedColors)$eigengenes %>% orderMEs()
+survival <- merge(survival, MEs0_sr, by.x = "X.1", by.y = "row.names") %>% 
+  dplyr::rename(shortRead_id = X.1, patient_id = ICBRC)
+```
+
+```{r eval=TRUE, include=TRUE}
+os_surv <- Surv(time = survival$os_time, event = survival$os_event)
+os <- rbind(summary(coxph(os_surv~MEblue, data = survival))$coefficients,  
+            summary(coxph(os_surv~MEturquoise, data = survival))$coefficients, 
+            summary(coxph(os_surv~MEgrey, data = survival))$coefficients) %>% as.data.frame()
+os$p_adj <- p.adjust(os$`Pr(>|z|)`)
+print(os)
+```
+
+```{r eval=TRUE, include=TRUE}
+pfs_surv <- Surv(time = survival$pfs_time, event = survival$pfs_event)
+pfs <- rbind(summary(coxph(pfs_surv~MEblue, data = survival))$coefficients,  
+            summary(coxph(pfs_surv~MEturquoise, data = survival))$coefficients, 
+            summary(coxph(pfs_surv~MEgrey, data = survival))$coefficients) %>% as.data.frame()
+pfs$p_adj <- p.adjust(pfs$`Pr(>|z|)`)
+print(pfs)
+#save(list = c("os", "pfs"), file = "/Volumes/Wild Flower/OV_SpliceVariants/data/6_association/survival_by_module_sr.Rd")
+```
+So overall the turquoise module seems to be associated with patient overall survival in short read data. Let's view its Kaplan Meier Plot then        
+```{r echo=FALSE, fig.dim=c(5,6)}
+survival$bi_MEturquoise <- ifelse(survival$MEturquoise > quantile(survival$MEturquoise)[4], "high", "low")
+fit <- survfit(os_surv~bi_MEturquoise, data = survival)
+p <- ggsurvplot(fit, data = survival, pval = TRUE, conf.int = TRUE,
+           risk.table = TRUE, 
+           risk.table.col = "strata", 
+           ggtheme = theme_bw(base_size = 16))
+print(p)
+```
+
+The Kaplan Meier plot is created using module eigenvalue of MEturquoise separated by it's third quantile (i.e., values above third quantile of MEturquoise eigenvalue are considered high if else low).    
+
+## Question 3: is this module expression associated with immune expression?        
+We categorized our immune expression into:            
+1. the pathological analysis of several immune features such as CD4, CD8, PDL1, CD20 etc. that comes with patient sample sheet.     
+2. the expression of several prominent immune expression genes including: GZMB, GNLY, CD274, MHCI, MHCII, PRF1, as well as TLS expression and TMB.     
+3. immune cell expression estimated by MCP counter    
+Therefore, for convenience purpose we will test our immune expression only in short read data.    
+```{r eval=TRUE, include=FALSE}
+load("/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/short_read_immune_data.rds")
+```
+
+```{r eval=FALSE, include=TRUE}
+sample_id <- mapping$ICBRC
+
+## dataframe 1:
+immune_1 <- read.table("/Volumes/Wild Flower/OV_SpliceVariants/data/0_samples/hh_ova_immune.txt")
+immune_1 <- immune_1[sample_id, ]
+rownames(immune_1) <- mapping$X.1
+
+## dataframe 2:
+files <- list.files(path = "/Volumes/Wild Flower/OV_SpliceVariants/data/3_salmon/gencode.v39/output", 
+                    pattern = ".sf", full.names = TRUE, recursive = TRUE)
+names(files) <- stringr::str_split(files, pattern = "/", simplify = TRUE)[,9] %>%
+  stringr::str_replace("_quant", "")
+shortRead_tpm_ref <- tximport(files, type = "salmon", txIn=TRUE, txOut = TRUE)
+shortRead_tpm_ref <- shortRead_tpm_ref$abundance %>% as.data.frame()
+rownames(shortRead_tpm_ref) <- sub("\\|.*", "", rownames(shortRead_tpm_ref))
+gtf <- import("/Volumes/Wild Flower/OV_SpliceVariants/data/0_references/gencode.v39.chr_patch_hapl_scaff.annotation.sorted.gtf")
+transcript_to_gene <- as.data.frame(mcols(gtf)[, c("transcript_id", "gene_name", "gene_id")]) %>% na.omit() %>% distinct()
+shortRead_tpm_ref$gene_name <- transcript_to_gene$gene_name[match(rownames(shortRead_tpm_ref), transcript_to_gene$transcript_id)]
+gene_tpm <- aggregate(. ~ gene_name, data = shortRead_tpm_ref, FUN = sum)
+rownames(gene_tpm) <- gene_tpm$gene_name
+gene_tpm <- gene_tpm[, -1]
+
+immune_2 <- gene_tpm[c("GZMB", "GNLY", "CD274", "PRF1", 
+                       "HLA-A", "HLA-B", "HLA-C", 
+                       "HLA-DRB1", "HLA-DQB1", "HLA-DPB1", "HLA-DRB5", "HLA-DOB", "HLA-DQB2", 
+                       "CD79B", "CD1D", "CCR6", "LAT", "SKAP1", "CETP", "EIF1AY", "RBP5",
+                       "PTGDS", "CCL19", "CCL21", "CXCL13", "CCR7", "CXCR5", "SELL", "LAMP3"), ]
+immune_2["MHCI", ] <- colMeans(immune_2[c("HLA-A", "HLA-B", "HLA-C"), ])
+immune_2["MHCII", ] <- colMeans(immune_2[c("HLA-DRB1", "HLA-DQB1", "HLA-DPB1", "HLA-DRB5", "HLA-DOB", "HLA-DQB2"), ])
+immune_2["TLS", ] <- colMeans(immune_2[c("CD79B", "CD1D", "CCR6", "LAT", "SKAP1", "CETP", "EIF1AY", "RBP5",
+                                         "PTGDS", "CCL19", "CCL21", "CXCL13", "CCR7", "CXCR5", "SELL", "LAMP3"), ])
+immune_2 <- immune_2[c("GZMB", "GNLY", "CD274", "PRF1", "MHCI", "MHCII", "TLS"), ] %>% t() %>% as.data.frame()
+
+## dataframe 3: 
+immune_3 <- MCPcounter.estimate(expression = gene_tpm, featuresType = "HUGO_symbols")
+immune_3 <- immune_3[c("T cells", "CD8 T cells", "Cytotoxic lymphocytes", 
+                       "B lineage", "NK cells", "Monocytic lineage", "Myeloid dendritic cells", 
+                       "Neutrophils"), ] %>% t() %>% as.data.frame() 
+colnames(immune_3) <- gsub(" ", "_", colnames(immune_3))
+
+## tmb 
+tmb <- read.csv("/Volumes/Wild Flower/OV_CopyNumber/docs/00_mitéra/clinical/raw/ova/HH_TMB.csv")
+tmb <- tmb %>% dplyr::filter(X %in% mapping$ICBRC)
+rownames(tmb) <- tmb$X
+tmb$X <- NULL
+colnames(tmb) <- "TMB"
+tmb <- merge(tmb, mapping, by.x = "row.names", by.y = "ICBRC") %>% 
+  dplyr::select(X.1, TMB)
+rownames(tmb) <- tmb$X.1
+tmb$X.1 <- NULL
+
+## merge
+immune <- cbind(immune_1[mapping$X.1, ], immune_2[mapping$X.1, ], immune_3[mapping$X.1, ], tmb[mapping$X.1, ])
+
+#save(list = c("immune", "gene_tpm", "shortRead_tpm_ref", "transcript_to_gene", "sample_id"), 
+#     file = "/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/short_read_immune_data.rds")
+```
+
+```{r eval=TRUE, include=FALSE}
+load("/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/immune_associations.rds")
+```
+
+```{r eval=FALSE, include=TRUE}
+p_value <- matrix(data = NA, nrow = ncol(immune), ncol = ncol(MEs0_sr)) %>% as.data.frame()
+colnames(p_value) <- colnames(MEs0_sr)
+rownames(p_value) <- colnames(immune)
+estimate <- matrix(data = NA, nrow = ncol(immune), ncol = ncol(MEs0_sr)) %>% as.data.frame()
+colnames(estimate) <- colnames(MEs0_sr)
+rownames(estimate) <- colnames(immune)
+
+for(m in colnames(MEs0_sr)){
+  module.x <- MEs0_sr[mapping$X.1, m]
+  for(i in colnames(immune)){
+    immune.x <- immune[mapping$X.1, i]
+    test <- cor.test(module.x, immune.x, method = "pearson")
+    p_value[i, m] <- test$p.value
+    estimate[i, m] <- test$estimate
+  }
+}
+
+p_adj <- apply(p_value, 1, function(x){p.adjust(x, method = "fdr")})
+p_adj <- t(p_adj) %>% as.data.frame()
+```
+
+```{r eval=TRUE, include=TRUE}
+p_adj_long <- as.data.frame(p_adj) %>%
+  rownames_to_column("phenotype") %>%
+  pivot_longer(cols = -phenotype, names_to = "module", values_to = "FDR")
+
+estimate_long <- estimate %>%
+  rownames_to_column("phenotype") %>%
+  pivot_longer(cols = -phenotype, names_to = "module", values_to = "estimate")
+
+combined_long <- left_join(estimate_long, p_adj_long, by = c("phenotype", "module")) %>% 
+  dplyr::filter(FDR < 0.20)
+
+combined_long <- combined_long %>%
+  mutate(color = ifelse(estimate > 0, "red", "blue"),
+         alpha_norm = ifelse(FDR < 0.05, 1, 0.5))
+
+p <- ggplot(combined_long, aes(x = module, y = phenotype)) +
+  geom_point(aes(size = abs(estimate), color = color, alpha = alpha_norm)) +
+  scale_color_identity() +
+  scale_alpha_identity() +
+  theme_bw(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.title = element_text(size = 10.5)) + 
+  labs(x = "Module",
+       y = "Immune Features",
+       size = "Abs.Estimate")
+print(p)
+```
+
+
+## Question 4: is this module expression associated with copy number?        
+```{r eval=TRUE, include=FALSE}
+load("/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/copyNumber_association.rds")
+```
+Copy number at arm level is derived from applying FACETS --> GISTIC2 to whole exome sequencing data. There are 45 samples that have matched WES and short read data.             
+```{r eval=FALSE, include=TRUE}
+arm_cn <- read.table("/Volumes/Wild Flower/OV_CopyNumber/docs/HH_ova/gistic/input_2/broad_values_by_arm.txt", 
+                     sep = "\t", header = TRUE, row.names = 1)
+arm_cn <- arm_cn[, intersect(mapping$ICBRC, colnames(arm_cn))]
+
+mapped_cn <- mapping %>% 
+  dplyr::filter(ICBRC %in% intersect(mapping$ICBRC, colnames(arm_cn))) %>% 
+  dplyr::filter(X.1 %in% intersect(mapping$X.1, rownames(MEs0_sr)))
+
+p_value <- matrix(data = NA, nrow = nrow(arm_cn), ncol = ncol(MEs0_sr)) %>% as.data.frame()
+colnames(p_value) <- colnames(MEs0_sr)
+rownames(p_value) <- rownames(arm_cn)
+estimate <- matrix(data = NA, nrow = nrow(arm_cn), ncol = ncol(MEs0_sr)) %>% as.data.frame()
+colnames(estimate) <- colnames(MEs0_sr)
+rownames(estimate) <- rownames(arm_cn)
+
+for(m in colnames(MEs0_sr)){
+  module.x <- MEs0_sr[mapped_cn$X.1, m]
+  for(i in rownames(arm_cn)){
+    cn.x <- arm_cn[i, mapped_cn$ICBRC] %>% unlist()
+    test <- cor.test(module.x, cn.x, method = "pearson")
+    p_value[i, m] <- test$p.value
+    estimate[i, m] <- test$estimate
+  }
+}
+
+p_adj <- apply(p_value, 1, function(x){p.adjust(x, method = "fdr")})
+p_adj <- t(p_adj) %>% as.data.frame()
+```
+
+
+```{r eval=TRUE, include=TRUE}
+p_adj_long <- as.data.frame(p_adj) %>%
+  rownames_to_column("phenotype") %>%
+  pivot_longer(cols = -phenotype, names_to = "module", values_to = "FDR")
+
+estimate_long <- estimate %>%
+  rownames_to_column("phenotype") %>%
+  pivot_longer(cols = -phenotype, names_to = "module", values_to = "estimate")
+
+combined_long <- left_join(estimate_long, p_adj_long, by = c("phenotype", "module")) %>% 
+  dplyr::filter(FDR < 0.20)
+
+combined_long <- combined_long %>%
+  mutate(color = ifelse(estimate > 0, "red", "blue"),
+         alpha_norm = ifelse(FDR < 0.05, 1, 0.5))
+
+p <- ggplot(combined_long, aes(x = module, y = phenotype)) +
+  geom_point(aes(size = abs(estimate), color = color, alpha = alpha_norm)) +
+  scale_color_identity() +
+  scale_alpha_identity() + 
+  theme_bw(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.title = element_text(size = 10.5)) + 
+  labs(x = "Module",
+       y = "Copy Number",
+       size = "Abs.Estimate")
+print(p)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

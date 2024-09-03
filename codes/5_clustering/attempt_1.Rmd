@@ -1,0 +1,357 @@
+---
+title: "attempt1"
+author: "You"
+date: "2024-08-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(pheatmap)
+library(tidyverse)
+library(ggplot2)
+library(ggrepel)
+library(dplyr)
+library(stats)
+library(cluster)
+library(caret)
+library(survminer)
+library(survival)
+```
+
+
+### Clustering patients into two groups based on AS event PSI values    
+```{r cars}
+setwd("/Volumes/Wild_Flower/OV_SpliceVariants/data/")
+load("6_association/sample_data/psi_knn_imp.Rd")
+
+cor_mtx <- cor(psi_lr.imp, method = "spearman")
+heatmap(cor_mtx, margins = c(10, 10))
+
+group_1 <- c("HH12000124FN2", "HH12000157FN4", "T16-088-FT2", "T16-002FN1", 
+             "T16-106-FT1", "T15-162-FT2", "T15-036-FN2", "T14-042FN3", 
+             "T15-022-FT2", "090061A", "T16-035-FN2", "10-149A", "T15-051-FT4")
+group_2 <- setdiff(colnames(psi_lr.imp), group_1)
+condition_mtx <- data.frame(
+  sample = c(group_1, group_2), 
+  group = c(rep("group_1", length(group_1)), rep("group_2", length(group_2))), 
+  condition = ifelse(grepl("FN", c(group_1, group_2)), "normal", "tumour"))
+print(condition_mtx)
+```
+
+## Calculate Survival Difference between two groups          
+```{r}
+load("/Volumes/Wild_Flower/OV_SpliceVariants/data/1_sampleSheet/hh_ova_surv.Rd")
+metatable <- merge(survival, clinical, by=c("copy_number", "long_read", "short_read"))
+metatable <- merge(metatable, condition_mtx, by.x = "long_read", by.y = "sample")
+
+## overall survival 
+surv_object <- Surv(time = metatable$os_time, event = metatable$os_event)
+fit <- survfit(surv_object ~ group, data = metatable)
+p1 <- ggsurvplot(fit = fit, 
+           data = metatable, 
+           #pval = TRUE,    
+           conf.int = TRUE,   
+           risk.table = TRUE,  
+           cumcensor = TRUE, 
+           tables.height = 0.2, 
+           ggtheme = theme_bw(), 
+           surv.median.line = "hv")  
+print(p1)
+
+## progression free survival 
+surv_object <- Surv(time = metatable$pfs_time, event = metatable$pfs_event)
+fit2 <- survfit(surv_object ~ group, data = metatable)
+p2 <- ggsurvplot(fit = fit2, 
+           data = metatable, 
+           #pval = TRUE,    
+           conf.int = TRUE,   
+           cumcensor = TRUE, 
+           risk.table = TRUE,  
+           ggtheme = theme_bw(), 
+           tables.height = 0.2, 
+           surv.median.line = "hv") 
+print(p2)
+```
+
+## Calculate Differences in stage and age between two groups              
+```{r}
+age <- wilcox.test(metatable$age[metatable$group == "group_1"], 
+                   metatable$age[metatable$group == "group_2"])
+stage <- wilcox.test(metatable$stage[metatable$group == "group_1"], 
+                     metatable$stage[metatable$group == "group_2"])
+
+plot_df <- metatable %>% pivot_longer(cols = c(age, stage), names_to = "variable", values_to = "value")
+p3 <- ggplot(plot_df, aes(x = group, y = value, fill = group)) +
+  geom_boxplot() +
+  facet_wrap(~ variable, scales = "free", ncol = 2) + 
+  labs(title = "", x = "Group", y = "") +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "none") +  
+  stat_compare_means(method = "wilcox.test", label = "p.format", label.y = 1)
+print(p3)
+```
+
+## Alternative Splicing Regulator Proteins associating with Clusters?         
+```{r}
+## Get List of Alternative Splicing related Proteins 
+library(clusterProfiler)
+library(ReactomePA)
+library(org.Hs.eg.db) 
+
+setwd("/Volumes/Wild_Flower/OV_SpliceVariants")
+
+## load mutect2
+load("data/4_mutect2/mutation.Rd")
+mutations_filt <- mutations %>% dplyr::filter(grepl("exonic", Func.ensGene))
+
+## load sample mapping
+map <- read.csv("/Volumes/Wild_Flower/OV_SpliceVariants/data/0_samples/mapping_table.csv", row.names = 1) %>% 
+  dplyr::mutate(long_read = gsub("_", "-", long_read)) %>% 
+  dplyr::filter(long_read %in% colnames(psi_lr.imp))
+
+## AS regulator proteins from NCBI 
+SP <- read.table("code/5_clustering/SR_proteins.txt", sep = "\t", header = T) %>% dplyr::select(Symbol)
+hnRNPs <- read.table("code/5_clustering/hnRNP_family.txt", sep = "\t", header = T) %>% dplyr::select(Symbol)
+spliceosome <- read.delim("code/5_clustering/spliceosome.txt") %>% dplyr::select(Symbol)
+other <- c("ETR3", "CELF1", "CELF2", "FOX1", "FOX2")
+AS_gene <- unique(c(SP$Symbol, hnRNPs$Symbol, spliceosome$Symbol, other))
+
+## filtering these genes using REACTOME pathways 
+entrez_ids <- bitr(AS_gene, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+enrich_result <- enrichPathway(gene = entrez_ids$ENTREZID, organism = "human", 
+                               pvalueCutoff = 0.05,  qvalueCutoff = 0.05, readable = TRUE)
+enriched_pathways <- as.data.frame(enrich_result) %>% 
+  dplyr::filter(grepl("Splicing|splicing", Description)) 
+pathway_genes <- strsplit(enriched_pathways$geneID, "/") %>% unlist() %>% unique()
+
+save(list = "pathway_genes", file =  "data/6_association/AS_regulators.Rd")
+```
+
+
+```{r}
+## Association with group 
+AS_prot_mut <- mutations %>% dplyr::filter(Gene.ensGene %in% pathway_genes)
+AS_prot_mut <- as.matrix(as.data.frame.array(table(AS_prot_mut$sample, AS_prot_mut$Gene.ensGene)))
+AS_prot_mut <- ifelse(AS_prot_mut > 0, 1, 0) ## 1 = mutated, 0 = wildtype 
+rownames(metatable) <- metatable$copy_number
+metatable2 <- merge(metatable, as.data.frame(AS_prot_mut), by="row.names")
+
+results <- list()
+
+for (gene in colnames(AS_prot_mut)) {
+  
+  # Create a contingency table for the gene
+  group_1_mutations <- sum(metatable2[metatable2$group == "group_1", gene])
+  group_1_no_mutations <- sum(metatable2$group == "group_1") - group_1_mutations
+  
+  group_2_mutations <- sum(metatable2[metatable2$group == "group_2", gene])
+  group_2_no_mutations <- sum(metatable2$group == "group_2") - group_2_mutations
+  
+  # Create a contingency table
+  contingency_table <- matrix(c(group_1_mutations, group_1_no_mutations,
+                                group_2_mutations, group_2_no_mutations),
+                              nrow = 2, byrow = TRUE)
+  
+  # Perform Fisher's Exact Test
+  fisher_test <- fisher.test(contingency_table)
+  
+  # Store the results
+  results[[gene]] <- list(p_value = fisher_test$p.value,
+                          group_1_mutation_rate = group_1_mutations / sum(metatable2$group == "group_1"),
+                          group_2_mutation_rate = group_2_mutations / sum(metatable2$group == "group_2"))
+}
+
+# Convert results to a dataframe for easy viewing
+results_df <- do.call(rbind, lapply(names(results), function(gene) {
+  data.frame(Gene = gene,
+             Group_1_Mutation_Rate = results[[gene]]$group_1_mutation_rate,
+             Group_2_Mutation_Rate = results[[gene]]$group_2_mutation_rate,
+             P_Value = results[[gene]]$p_value)
+}))
+results_df$abs_dmut <- abs(results_df$Group_1_Mutation_Rate- results_df$Group_2_Mutation_Rate)
+results_df.filt <- results_df %>% dplyr::filter(abs_dmut > 0.3)
+results_df.filt$p_adj <- p.adjust(results_df.filt$P_Value, method = "fdr")
+```
+
+
+
+```{r}
+
+## prepare test 
+mutation_list <- list()     
+
+for(gene in pathway_genes) {
+  cat("analysing:", gene)
+  wes_id <- mutations$sample %>% unique()
+  sample_mut <- map$long_read[map$copy_number %in% unique(mutations$sample[mutations$Gene.ensGene == gene])] 
+  sample_wt <- map$long_read[map$copy_number %in% setdiff(wes_id, unique(mutations$sample[mutations$Gene.ensGene == gene]))] 
+  
+  psi_mut <- psi_lr.imp[, sample_mut, drop = FALSE]
+  psi_wt <- psi_lr.imp[, sample_wt, drop = FALSE]
+  
+  tryCatch({
+    if (ncol(psi_mut) == 0 || ncol(psi_wt) == 0) {
+      stop("No data in psi_mut or psi_wt, skipping this gene")
+    }
+    
+    mutation_dpsi <- data.frame(
+      deltaPSI = rowMeans(psi_mut) - rowMeans(psi_wt), 
+      absDeltaPSI = abs(rowMeans(psi_mut) - rowMeans(psi_wt)), 
+      p_value = rep(NA, nrow(psi_mut))
+    )
+    
+    for(i in rownames(mutation_dpsi)) {
+      test <- wilcox.test(psi_mut[i, ], psi_wt[i, ], exact = FALSE)
+      mutation_dpsi[i, "p_value"] <-  test$p.value
+    }
+    
+    mutation_dpsi <- mutation_dpsi %>% dplyr::filter(absDeltaPSI > 0.20)
+    mutation_dpsi$p_adj <- p.adjust(mutation_dpsi$p_value, method = "fdr")
+    mutation_dpsi <- mutation_dpsi %>% dplyr::filter(p_adj < 0.25)
+    mutation_dpsi$AS_event <- rownames(mutation_dpsi)
+    mutation_dpsi$gene <- gene
+    
+    mutation_list[[gene]] <- mutation_dpsi
+    
+  }, error = function(e) {
+    message(paste("Skipping gene", gene, "due to error:", e$message))
+  })
+}
+
+mutation_psi <- do.call(rbind, mutation_list)
+rownames(mutation_psi) <- NULL
+
+pbid <- sapply(mutation_psi$AS_event, function(x) strsplit(x, ";")[[1]][1])
+pbid <- unname(pbid)
+```
+
+Which of those mut AS regulator associated AS events were on surface?         
+```{r}
+setwd("/Volumes/Wild_Flower/OV_SpliceVariants")
+tmhmm <- read.table("data/4_transcoder/out_tmhmm.txt") %>% 
+  dplyr::mutate(isoform_id = sub("\\.[^.]*$", "", V1)) %>% 
+  dplyr::mutate(pacbio_id = sub("\\.[^.]*$", "", isoform_id)) %>% 
+  dplyr::filter(pacbio_id %in% pbid)
+
+
+```
+
+
+
+
+```{r}
+## condition matrix --------------- 
+# group_1 <- c("HH12000124FN2", "HH12000157FN4", "T16-088-FT2", "T16-002FN1", 
+#              "T16-106-FT1", "T15-162-FT2", "T15-036-FN2", "T14-042FN3", 
+#              "T15-022-FT2", "090061A", "T16-035-FN2", "10-149A", "T15-051-FT4")
+# group_2 <- setdiff(colnames(psi_lr.imp), group_1)
+# condition_mtx <- data.frame(
+#   sample = c(group_1, group_2), 
+#   group = c(rep("group_1", length(group_1)), rep("group_2", length(group_2))), 
+#   condition = ifelse(grepl("FN", c(group_1, group_2)), "normal", "tumour"))
+# metatable <- merge(survival, clinical, by=c("copy_number", "long_read", "short_read"))
+# metatable <- merge(metatable, condition_mtx, by.x = "long_read", by.y = "sample")
+# save(list = "metatable", file =  "data/6_association/metatable.Rd")
+## load AS proteins --------------- 
+# SF <- read.table("data/6_association/splicing_factors.txt", sep = "\t", header = T) %>%
+#   dplyr::select(Gene) %>% as.data.frame() %>% unlist() %>% unname()
+# spliceosome <- readxl::read_xlsx("data/6_association/spliceosome.xlsx", skip = 3) %>%
+#   dplyr::filter(`Recommended for final inclusion` %in% c("yes", "yes (U11/U12)")) %>%
+#   dplyr::select(`Gene Symbol`) %>% as.data.frame() %>% unlist() %>% unname()
+# SP <- read.table("code/5_clustering/SR_proteins.txt", sep = "\t", header = T) %>%
+#   dplyr::select(Symbol) %>% as.data.frame() %>% unlist() %>% unname()
+# hnRNPs <- read.table("code/5_clustering/hnRNP_family.txt", sep = "\t", header = T) %>%
+#   dplyr::select(Symbol) %>% as.data.frame() %>% unlist() %>% unname()
+# spliceosome_ncbi <- read.delim("code/5_clustering/spliceosome.txt") %>%
+#   dplyr::select(Symbol) %>% as.data.frame() %>% unlist() %>% unname()
+# AS_genes <- unique(c(SP, hnRNPs, spliceosome_ncbi))
+# entrez_ids <- bitr(AS_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+# enrich_result <- enrichPathway(gene = entrez_ids$ENTREZID, organism = "human",
+#                                pvalueCutoff = 0.05,  qvalueCutoff = 0.05, readable = TRUE)
+# enriched_pathways <- as.data.frame(enrich_result) %>%
+#   dplyr::filter(grepl("Splicing|splicing", Description))
+# NCBI <- strsplit(enriched_pathways$geneID, "/") %>% unlist() %>% unique()
+# AS_genes <- unique(c(NCBI, SF, spliceosome))
+# save(list = "AS_genes", file =  "data/6_association/AS_regulators.Rd")
+## load sample mapping ---------------
+# map <- read.csv("/Volumes/Wild_Flower/OV_SpliceVariants/data/0_samples/mapping_table.csv", row.names = 1) %>% 
+#   dplyr::mutate(long_read = gsub("_", "-", long_read)) %>% 
+#   dplyr::filter(long_read %in% colnames(psi_lr.imp))
+# save(list = "map", file =  "data/6_association/lr_sr_wes_map.Rd")
+## TPM normalisation ----------------
+# load("data/6_association/sample_data/gencode_tpm_sr.Rd")
+# tpm_mtx_gene_lr_long <- tpm_mtx.gene.lr %>%
+#   rownames_to_column(var = "Gene") %>%  # Move row names to a column if not already
+#   pivot_longer(cols = -Gene, names_to = "Sample", values_to = "TPM")
+# p <- ggplot(tpm_mtx_gene_lr_long, aes(x = Sample, y = TPM)) +
+#   geom_boxplot() +
+#   theme_minimal() +
+#   labs(title = "Boxplots of TPM across Samples",
+#        x = "Sample",
+#        y = "TPM") +
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+# ggsave(filename = "plot/plot_0/pre-normalisation.png", plot = p, width = 5, height = 4.5, units = "in", dpi = 600)
+# log_tpm_mtx <- log2(tpm_mtx.gene.lr + 1)
+# log_tpm_mtx_long <- log_tpm_mtx %>%
+#   rownames_to_column(var = "Gene") %>%
+#   pivot_longer(cols = -Gene, names_to = "Sample", values_to = "LogTPM")
+# p <- ggplot(log_tpm_mtx_long, aes(x = Sample, y = LogTPM)) +
+#   geom_boxplot() +
+#   theme_minimal() +
+#   labs(title = "Boxplots of Log2-Transformed TPM across Samples",
+#        x = "Sample",
+#        y = "Log2(TPM + 1)") +
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+# ggsave(filename = "plot/plot_0/log2-normalisation.png", plot = p, width = 5, height = 4.5, units = "in", dpi = 600)
+# tpm_mtx.gene <- log_tpm_mtx
+# save(list = "log_tpm_mtx", file = "data/6_association/tpm_matrix.Rd")
+## Plots ----------------
+# result.1$Significance <- with(result.1, ifelse(p_adj < 0.20 & abs(log2FC) > 1, "Significant", "Not Significant"))
+# p <- ggplot(result.1, aes(x = log2FC, y = -log10(p_adj), color = Significance)) +
+#   geom_point(alpha = 0.8, size = 1) +
+#   scale_color_manual(values = c("grey", "red")) +
+#   geom_vline(xintercept = c(-1, 1), linetype = "dashed") +
+#   geom_hline(yintercept = -log10(0.20), linetype = "dashed") +
+#   labs(x = "log2 Fold Change", y = "-log10 FDR") +
+#   theme_bw() + theme(legend.title = element_blank()) + 
+#   geom_text_repel(data = subset(result.1, Significance == "Significant"),
+#                   aes(label = rownames(subset(result.1, Significance == "Significant"))), 
+#                   size = 3, box.padding = 0.35, point.padding = 0.3, max.overlaps = Inf)
+# ggsave(filename = "plot/plot_1/volcano of SF genes between group 1 & 2.png", plot = p, 
+#        units = "in", width = 4, height = 2.5, dpi = 600)
+## Copy Number ----------------
+# setwd("/Volumes/Wild_Flower/OV_CopyNumber/")
+# arm <- read.table("docs/HH_ova/gistic/input_2/broad_values_by_arm.txt", sep = "\t", header = T)
+# gene <- read.table("docs/HH_ova/gistic/input_2/broad_data_by_genes.txt", sep = "\t", header = T) %>%
+#   #dplyr::filter(Gene.Symbol %in% AS_genes) %>%
+#   dplyr::select(Gene.Symbol, Cytoband, any_of(metatable$copy_number))
+# col_mapping <- setNames(metatable$long_read, metatable$copy_number)
+# gene <- gene %>% rename_with(~ col_mapping[.x], .cols = -c(Gene.Symbol, Cytoband))
+# arm <- arm %>% dplyr::select(Chromosome.Arm, any_of(metatable$copy_number))
+# arm <- arm %>% rename_with(~ col_mapping[.x], .cols = -c(Chromosome.Arm))
+# rownames(arm) <- arm$Chromosome.Arm
+# arm$Chromosome.Arm <- NULL
+# rownames(gene) <- gene$Gene.Symbol
+# gene$Gene.Symbol <- NULL
+# copy_no.arm <- arm
+# copy_no.gene <- gene
+# setwd("/Volumes/Wild_Flower/OV_SpliceVariants")
+# save(list = c("copy_no.arm", "copy_no.gene"), file = "data/6_association/copy_number.Rd")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

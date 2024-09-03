@@ -1,0 +1,351 @@
+---
+title: "Differential Alternative Splicing Analysis"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## What is Differential Alternative Splicing Analysis?
+
+Alternative splicing is a process where different combinations of exons are joined together to produce multiple transcript variants (isoforms) from a single gene, leading to the production of different proteins. Differential Alternative Splicing (DAS) analysis is used to identify and quantify differences in the **patterns** of alternative splicing between different conditions. \
+
+There are many different tools to perform differential alternative splicing analysis, and they are categorized into count based and isoform based. Of which count based could be further divided into event based or exon based. Some of the most popular choices of count-based tools includes DEXseq, limma, MAJIQ, rMATS, and SUPPA2, of which MAJIQ and SUPPA detects overall the highest proportion of the qPCR-validated DS genes across the data set. Although number wise SUPPA detects far less number of DS events compared to all other tools but it doesn't affect the fact that they are among the most accurate tools. \
+
+MAJIQ is designed for short-reads specifically, but recently the MAJIQ-L version can also handle long read sequencing as well, although it requires analysis result from paired short-reads as pre-request. On the other hand, SUPPA/SUPPA2 were traditionally known for handling long-reads such as PacBio sequencing. \
+
+In our analysis we wish to understand the clustering of alternative splicing events that differentiates\
+(1) Normal from Tumor\
+(2) Associates with better survival\
+
+Therefore, we will apply SUPPA2 to the PacBio Long Reads to get long read samples' PSI matrix for each alternative splicing event and then apply MAJIQ to the short-reads (all short reads paired or unpaired) to get short read samples' PSI matrix. The former will be dedicated to answer question (1) and if possible provide clues to question (2), while the short read PSI matrix (because there are more short read samples) will be used for understanding the association between clustered alternative splicing event with other factors like survival, immune response, chromosome copy number etc.
+
+## Long reads         
+
+### Preparing files needed for SUPPA2
+
+SUPPA generates local alternative splicing events from an input annotation file (.gtf). This method reads transcript and gene information solely from the "exon" line and generates the event and outputs an event file (.ioe) for local AS events and (.ioi) for transcripts. The `.ioe` file provides for each AS event in a gene, the transcript that describe either form of the event. Specifically, it provides the transcripts that contribute to the numerator (one form of the event) and the denominator (both forms of the event) of the PSI calculation. On the other hand, the `.ioi` file provides for each transcript in a gene, the set of all transcripts from the gene from which the transcript relative abundance is calculated. Transcript events are important as they can describe splicing variations that are complex and cannot be encapsulated in a simple event.
+
+```{r prepare_gtf}
+## Prepare GTF file for SUPPA input 
+library(rtracklayer)
+library(dplyr)
+library(biomaRt)
+
+# read in the raw data 
+sq_QCpass <- read.table("data/2_sqanti/filter_rule_RulesFilter_result_classification.txt",
+                        sep = "\t", stringsAsFactors = FALSE, quote = NULL, header = TRUE) %>% 
+  dplyr::filter(filter_result == "Isoform")
+pac_gtf <- import.gff("data/2_sqanti/filter_rule.filtered.gtf")
+genc_gtf <- import.gff("data/0_references/gencode.v39.chr_patch_hapl_scaff.annotation.sorted.gtf")
+
+# retrieve the gene name and transcript name 
+gencode_table <- data.frame(associated_transcript = genc_gtf$transcript_id, 
+                            gene_name = genc_gtf$gene_name, 
+                            transcript_name = genc_gtf$transcript_name)
+gencode_table <- gencode_table %>% 
+  dplyr::filter(associated_transcript %in% sq_QCpass$associated_transcript) %>% 
+  distinct()
+sq_QCpass2 <- left_join(sq_QCpass, gencode_table, by = "associated_transcript")
+sq_QCpass2$ORF_seq <- NULL
+
+# add columns to pacbio gtf 
+pac_gtf_df <- as.data.frame(pac_gtf)
+merged_df <- merge(pac_gtf_df, sq_QCpass2, 
+                   by.x = "transcript_id", by.y = "isoform", all.x = TRUE)
+merged_df <- merged_df %>% 
+  dplyr::select(seqnames, start, end, width, transcript_id, source, type, 
+                gene_id, exons, transcript_name, gene_name) %>% 
+  dplyr::rename(exon_number = exons)
+merged_granges <- makeGRangesFromDataFrame(merged_df,
+                                           keep.extra.columns = TRUE,
+                                           seqnames.field = "seqnames",
+                                           start.field = "start",
+                                           end.field = "end")
+
+# we are interested in all kinds of alternative splicing events and therefore 
+# we will not filter any event type out. 
+
+# selecting annotations to keep 
+keep <- c("transcript_id", "source", "type", "gene_id", "exon_number", 
+          "transcript_name", "gene_name")
+pac_gtf_filt <- merged_granges[, keep]
+genc_gtf_filt <- genc_gtf[, keep]
+
+# matching sequence levels 
+# updating the pacbio gtf 
+seqnames_char <- seqnames(pac_gtf_filt) %>% as.character()
+seqnames_char <- sub("^chrM$", "chrMT", seqnames_char)
+seqnames_char <- gsub("\\.alt|\\.random", "", 
+                      gsub("_|v", ".", 
+                           gsub("chr|chrUn.", "", seqnames_char)))
+seqnames_char <- sub("^\\d+\\.(GL|KI|JH|KB)", "\\1", seqnames_char)
+seqlevels(pac_gtf_filt) <- unique(seqnames_char)
+seqnames(pac_gtf_filt) <- Rle(factor(seqnames_char, levels = unique(seqnames_char)))
+seqnames_char[which(as.character(seqnames(genc_gtf_filt)) == "MT")] <- "M"
+seqlevels(genc_gtf_filt) <- gsub("chr", "", seqlevels(gtf))
+seqlevels(pac_gtf_filt) %in% seqlevels(genc_gtf_filt) ## confirm 
+
+# merge the pacbio gtf and gencode gtf
+comb_gtf <- c(pac_gtf_filt, genc_gtf_filt)
+
+# export 
+export.gff(comb_gtf, "data/5_differential_expression/SUPPA/PacBio_Gencode39_merged.gtf")
+```
+
+Count matrix is quantified from the aligning the isoform fasta file produced by SQANTI3 pipeline against the raw long-reads in `subreads.fastq` format using `flair quantify` function. TPM normalization is then carried out by `convertCounts` function from `DGEobj.utils` package, inspired by TPM method from `edgeR` package.
+
+```{r flair_manifest}
+## Make a flair manifest file 
+flair_manifest <- read.table("code/0_sample_id/long_reads/flair_manifest.txt")
+subreads_fastq <- list.files("/Volumes/Still_Life/data/")
+subreads_fastq <- paste0("/Volumes/Still_Life/data/", subreads_fastq)
+flair_manifest$V4 <- subreads_fastq
+write.table(flair_manifest, "code/0_sample_id/long_reads/flair_manifest2.txt", 
+            sep = "\t", quote = F, col.names = F, row.names = F)
+```
+
+```{sh flair_quantify}
+## running flair quantify 
+conda activate flair_env
+
+## directories 
+HOME="/Volumes/Wild_Flower/OV_SpliceVariants/"
+OUTPUT="$HOME/data/3_flair/pacbio2"
+
+## files 
+manifest="$HOME/code/0_sample_id/long_reads/flair_manifest2.txt"
+fasta_p="$HOME/data/2_sqanti/filter_rule.filtered.fasta"
+fasta_g="/rds/general/user/ph323/home/MRes.project.2/docs/0_preprocessing/gencode.v39.transcripts.fa"
+
+## activate flair and quantify 
+flair quantify \
+  --reads_manifest "$manifest" \
+  --isoforms "$fasta_p" \
+  --output "$OUTPUT" \
+  --threads 8 \
+  --temp_dir "$OUTPUT/temp" \
+  --sample_id_only \
+  --trust_ends 
+```
+
+```{r tpm_norm}
+library(dplyr)
+library(DGEobj.utils)
+## Now go from count matrix to TPM 
+count_mtx <- read.table("data/3_flair/pacbio2/PB2.counts.tsv", 
+                        header = T, row.names = 1, 
+                        check.names = F)
+isoform_length <- read.table("data/2_sqanti/filter_rule_RulesFilter_result_classification.txt", header = T) %>%
+  dplyr::filter(filter_result == "Isoform") %>% 
+  dplyr::select(isoform, length)
+rownames(isoform_length) <- isoform_length$isoform
+isoform_length <- isoform_length[rownames(count_mtx), ]
+tpm <- convertCounts(countsMatrix = as.matrix(count_mtx), 
+                     unit = "TPM", 
+                     geneLength = isoform_length$length, 
+                     log = FALSE,
+                     normalize = "none",
+                     prior.count = NULL)
+
+## get the gencode tpm 
+count_mtx.g <- read.table("data/3_flair/gencode.v39/flair_gene.counts.tsv", 
+                        header = T, row.names = 1, 
+                        check.names = F)
+gencode_gff <- readGFF("data/0_references/gencode.v39.chr_patch_hapl_scaff.annotation.sorted.gtf")
+isoform_length.g <- data.frame(isoform = gencode_gff$transcript_id, 
+                               length = gencode_gff$end - gencode_gff$start, 
+                               type = gencode_gff$type)
+isoform_length.g <- isoform_length.g %>% dplyr::filter(type == "transcript")
+isoform_length.g <- distinct(isoform_length.g)
+rownames(isoform_length.g) <- isoform_length.g$isoform
+isoform_length.g <- isoform_length.g[rownames(count_mtx.g), ]
+tpm.g <- convertCounts(countsMatrix = as.matrix(count_mtx.g), 
+                     unit = "TPM", 
+                     geneLength = isoform_length.g$length, 
+                     log = FALSE,
+                     normalize = "none",
+                     prior.count = NULL)
+
+## combine pacbio and gencode tpm 
+combined_tpm <- rbind(tpm, tpm.g)
+
+## save it 
+write.table(combined_tpm, "data/3_flair/pacbio2/combined_tpm.txt", 
+            sep = "\t", quote = F, row.names = T, col.names = T)
+write.table(tpm, "data/3_flair/pacbio2/tpm.txt", 
+            sep = "\t", quote = F, row.names = T, col.names = T)
+write.table(tpm.g, "data/3_flair/gencode.v39/tpm.txt", 
+            sep = "\t", quote = F, row.names = T, col.names = T)
+```
+
+### Use SUPPA2 to identify alternative splicing events and calculate PSI value for each event per sample.
+
+`SUPPA v2.3` is used for differential alternative splicing analysis. Filtered GTF file from SQANTI3 pipeline and the expression matrix quantified by `flair quantify` and normalized by TPM method is used. Alternative splicing events were generated using `suppa generateEvents` function on the gtf file specifying the inclusion of the following AS events: skipping exon (SE), alternative 5'/3' splice sites (SS), mutually exclusive exons (MX), retained introns (RI), alternative first/last exons (FL).
+
+```{sh suppa_psi}
+## Connections
+HOME="/Volumes/Wild_Flower/OV_SpliceVariants/data"
+OUTPUT="$HOME/5_differential_expression/DAS/long_reads"
+suppa="/Volumes/Wild_Flower/SpliceVariants/code/packages/SUPPA/suppa.py"
+sqanti_gtf="$HOME/2_sqanti/filter_rule.filtered.gtf"
+expression_matrix="$HOME/3_flair/pacbio2/tpm.txt"
+#sqanti_gtf="$HOME/5_differential_expression/SUPPA/PacBio_Gencode39_merged.gtf"
+#expression_matrix="$HOME/3_flair/pacbio2/combined_tpm.txt"
+
+## Generation of transcript events and local alternative splicing events   
+python3 "$suppa" generateEvents \
+  -i "$sqanti_gtf" \
+  -o "$OUTPUT/sqanti_filter.events" \
+  -e SE SS MX RI FL \
+  -f ioe \
+  -b V
+
+## put all events and gtf in one ioe file 
+awk '
+    FNR==1 && NR!=1 { while (/^<header>/) getline; }
+    1 {print}
+' *.ioe > sqanti_filter.events.ioe
+cat *.gtf > sqanti_filter.events.gtf
+
+## obtain PSI values for splicing events  
+cd $OUTPUT
+python3 "$suppa" psiPerEvent \
+  -i sqanti_filter.events.ioe \
+  -e "$expression_matrix" \
+  -o "psi_event" \
+  -m INFO
+```
+
+```{r split_psi}
+## split the psi file into 2 parts 
+psi <- read.table("data/5_differential_expression/SUPPA2/psi_event.psi", check.names = F)
+psi_normal <- psi[, grepl("FN", colnames(psi))]
+psi_tumour <- psi[, !grepl("FN", colnames(psi))]
+write.table(psi_normal, "data/5_differential_expression/SUPPA2/psi_normal.psi",quote=FALSE,sep="\t")
+write.table(psi_tumour, "data/5_differential_expression/SUPPA2/psi_tumour.psi",quote=FALSE,sep="\t")
+
+tpm_normal <- tpm[, grepl("FN", colnames(psi))]
+tpm_tumour <- tpm[, !grepl("FN", colnames(psi))]
+write.table(tpm_normal, "data/5_differential_expression/SUPPA2/normal.tpm",quote=FALSE,sep="\t")
+write.table(tpm_tumour, "data/5_differential_expression/SUPPA2/tumour.tpm",quote=FALSE,sep="\t")
+```
+
+### Differential alternative splicing analysis between tumour and normal utilising the PSI values.
+
+Differential alternative splicing analysis is performed between tumor and normal samples using the suppa diffSplice function with the empirical method and default parameters, applying a multiple testing correction via the gene-correction parameter at an alpha level of 0.05.\
+PSI, or Percent Spliced In, is a metric used to quantify the inclusion level of a splicing event. It represents the proportion of transcripts that include a particular exon or splicing event out of the total number of transcripts that could potentially include it. PSI values range from 0 to 1, where 0 indicates that the splicing event is never included, and 1 indicates that it is always included. PSI is calculated using the following formula:\
+$$
+\text{PSI} = \frac{\text{Inclusion Transcripts}}{\text{Inclusion Transcripts} + \text{Skipping Transcripts}}
+$$
+
+Here, "Inclusion Transcripts" refers to the number of reads supporting the inclusion of the splicing event, and "Skipping Transcripts" refers to the number of reads supporting the skipping of the event. SUPPA reads the PSI values for transcripts or local splicing events and the transcript expression values from multiple samples, grouped by condition, along with the ioe/ioi file, to calculate events that are differentially spliced between conditions. SUPPA can handle multiple conditions with a variable number of samples per condition.\
+The differential splicing operation generates two types of output files: dpsi and psivec.\
+1. dpsi File: This is a tab-separated file with the (transcript or local) event ID in the first column, followed by a variable even number of fields. By default, SUPPA calculates $\Delta$ PSI values pairwise between each pair of adjacent conditions, representing the PSI difference between a given condition and the previous one.\
+2. psivec File: This is a tab-separated file with the (transcript or local) event ID in the first column, followed by a variable number of fields, each providing the PSI value for each replicate.
+
+```{sh suppa_diffSplice}
+# perform differential splicing analysis 
+python3 "$suppa" diffSplice \
+  --method empirical \
+  --psi psi_c2.psi psi_c1.psi \
+  --tpm tpm_c2.tpm tpm_c1.tpm \
+  --input sqanti_filter.events.ioe \
+  --area 1000 \
+  --lower-bound 0 \
+  --gene-correction \
+  --alpha 0.05 \
+  --save_tpm_events \
+  --median \
+  --output "diffSplice_cluster"
+```
+
+### Clustering
+
+Using the relative abundances (PSI values) of (transcript or local) events in all samples, and the information of which events change significantly in at least one comparison, SUPPA calculates clusters of events using a density-based clustering. Density-based clustering has various advantages over other methods: it does not require to choose the number of clusters, as this is driven by the data; and it cluster together events that even though they might not have similar PSI values, they behave similarly across conditions as long as there are sufficient events between them. This function works in the same way for transcripts or for local alternative splicing events.
+
+```{sh}
+## clustering 
+python3 "$suppa" clusterEvents \
+  --dpsi diffSplice_gc.dpsi \
+  --psivec diffSplice_gc.psivec \
+  --sig-threshold 0.25 \
+  --dpsi-threshold 0 \
+  --eps 0.03 \
+  --metric euclidean \
+  --min-pts 5 \
+  --groups 1-19,20-25 \
+  --clustering DBSCAN \
+  --output "cluster_gc3"
+```
+
+SUPPA clusterEvents operation generates a clustvec file per each pair of dpsi and psivec files. clustvec is a tab separated file, with the event ID in the first column, the cluster ID as second column, and then followed by a variable even number of fields, one for each condition, giving the mean PSI value per condition: **event_id**, **cluster_id**, **cond_PSI_avg** (average PSI value for each condition).
+
+```{r}
+library(magrittr)
+
+## read in result file 
+cluster_gc <- read.table("/Volumes/Wild_Flower/OV_SpliceVariants/data/5_differential_expression/SUPPA2/cluster_gc2.clustvec")
+colnames(cluster_gc) <- c("event_id", "cluster_id", "tumour_PSI_avg", "normal_PSI_avg")
+
+## filter for clustered events 
+cluster_gc_filt <- cluster_gc %>% dplyr::filter(cluster_id != -1)
+table(cluster_gc_filt$cluster_id)
+```
+
+## Short Reads    
+### Preparing files needed for SUPPA2       
+```{r}
+library(tximport)
+library(tidyverse)
+library(dplyr)
+library(magrittr)
+
+files <- list.files(path = file.path(HOME, "3_salmon/pacbio/output"), 
+                    pattern = ".sf", full.names = TRUE, recursive = TRUE)
+names(files) <- stringr::str_split(files, pattern = "/", simplify = TRUE)[,9] %>%
+  stringr::str_replace("_quant", "")
+txi.salmon <- tximport(files, type = "salmon", txIn=TRUE, txOut = TRUE)
+classification <- read.delim(file.path(HOME, "2_sqanti/filter_rule_RulesFilter_result_classification.txt")) %>% 
+  dplyr::filter(filter_result == "Isoform")
+isoform_id <- intersect(rownames(txi.salmon$counts), classification$isoform)
+tpm_matrix <- txi.salmon$abundance[isoform_id, ]
+
+path = file.path(HOME, "5_differential_expression/DAS/short_reads/tpm_matrix.txt")
+write.table(tpm_matrix, path, sep = "\t", quote = F, row.names = T, col.names = T)
+```
+
+The events were previously generated from the long reads, here we will obtain the PSI for short reads     
+```{sh}
+## connections 
+HOME="/Volumes/Wild_Flower/OV_SpliceVariants/data"
+OUTPUT="$HOME/5_differential_expression/DAS/short_reads/"
+suppa="/Volumes/Wild_Flower/OV_SpliceVariants/code/0_packages/SUPPA/suppa.py"
+sqanti_gtf="$HOME/2_sqanti/filter_rule.filtered.gtf"
+expression_matrix="$HOME/5_differential_expression/DAS/short_reads/tpm_matrix.txt"
+AS_events="$HOME/5_differential_expression/DAS/long_reads/sqanti_filter.events.ioe"
+
+## Previously the alternative splicing events were identified using SUPPA2 generateEvents
+## based on the gtf file produced by SQANTI3. Therefore, we skip this step and directly 
+## proceed to quantifying PSI values for these splicing events in short-reads expression
+## matrix. 
+
+## obtain PSI values for splicing events  
+cd $OUTPUT
+python3 "$suppa" psiPerEvent \
+  -i "$AS_events" \
+  -e "$expression_matrix" \
+  -o "psi_event" \
+  -m INFO
+```
+
+check the result: 
+```{r}
+psi_event <- read.table(file.path(HOME, "5_differential_expression/DAS/short_reads/psi_event.psi"))
+```
+
+
+

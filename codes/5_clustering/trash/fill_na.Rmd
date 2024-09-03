@@ -1,0 +1,72 @@
+---
+title: "KNN fill NA for isoform psi matrix"
+output: html_notebook
+---
+
+```{r}
+source("/Volumes/Wild Flower/1_SpliceVariantOV/code/pkgs&func.R")
+load("data/5_differential_expression/SUPPA/psi_event.rds")
+isoform_read_count <- read.table("/Volumes/Wild Flower/1_SpliceVariantOV/data/3_flair/pacbio/flair_counts_filtered.tsv", 
+                                 header = TRUE, 
+                                 row.names = 1, 
+                                 check.names = FALSE)
+```
+
+## Step 1: Remove rows with all values = NA     
+```{r}
+data <- as.matrix(psi_events)
+data <- data[(rowSums(is.na(data)) != ncol(data)), ] # 503 rows removed 
+#rownames(data) <- sub(".*?;", "", rownames(data))
+```
+
+## Step 2: Fill NA with KNN imputation    
+**What is KNN imputation?**    
+Assumption behind KNN for missing values is that a point value can be approximated by the values of points that are closest to it, based on other variables.     
+**How to use KNN imputation?**    
+Based on the assumption, it is therefore intuitive to select for variables that are related to the missing values you wish to impute. For example, using the complete dataset of mpg and acceleration to estimate missing values in horsepower column intuitively makes sense as these three variables are connected to each other.          
+**What is PSI?**    
+PSI is used to quantify the relative abundance of different isoforms produced by alternative splicing of pre-mRNA. It is used to describe the inclusion level of a particular exon or splice junction in a given RNA sample.    
+```{r}
+preProcValues <- preProcess(data,
+                            method = c("knnImpute"),
+                            k = round(sqrt(ncol(data))),
+                            knnSummary = mean)
+psi_filled <- predict(preProcValues, data, na.action = na.pass)
+```
+This result matrix is the imputed-normalized matrix. And we will use that directly as the input for clustering     
+
+## Step 3: Clustering      
+#### Attempt 1: Distance matrix + hierarchical clustering    
+```{r}
+set.seed(888)
+d <- dist(new_df_filled) ## calculate distance matrixs
+hc = hclust(d, method = "complete")
+cophenetic.d = cophenetic(hc)
+cor.test(d, cophenetic.d)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

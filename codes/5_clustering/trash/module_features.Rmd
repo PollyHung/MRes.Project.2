@@ -1,0 +1,87 @@
+---
+title: "GSEA"
+author: "You"
+date: "2024-08-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(caret)
+library(magrittr)
+library(DEXSeq)
+library(dynamicTreeCut)
+library(gplots)
+library(WGCNA)
+library(survival)
+library(MCPcounter)
+library(tximport)
+library(survminer)
+library(rtracklayer)
+library(tidyverse)
+library(openxlsx)
+```
+
+## Module Features            
+Here we want to characterise the features of each modules     
+Loading the module eigenvalue from short read and long reads as well as the WGCNA model     
+```{r}
+load("/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/wgcna.rds")
+load("/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/module_eigenvalue_sr.Rd")
+load("/Volumes/Wild Flower/OV_SpliceVariants/data/8_clustering/module_eigenvalue_lr.Rd")
+names(mergedColors) <- names(net$unmergedColors)
+```
+1. Classification table that comes with SQANTI3 analysis            
+```{r}
+classifications <- read.table("/Volumes/Wild Flower/OV_SpliceVariants/data/2_sqanti/filter_rule_RulesFilter_result_classification.txt", 
+                              header = TRUE, row.names = 1)
+blue_class <- classifications[names(mergedColors)[mergedColors == "blue"], ]
+grey_class <- classifications[names(mergedColors)[mergedColors == "grey"], ]
+turquoise_class <- classifications[names(mergedColors)[mergedColors == "turquoise"], ]
+```
+2. Transdecoder protein predictions:                 
+```{r}
+transdecoder <- read.csv("/Volumes/Wild Flower/OV_SpliceVariants/data/4_transcoder/transdecoder_map.csv", 
+                         row.names = "PBid")
+columns <- c("Blastp_match", "Blastp_evalue", 
+             "Transdecoder_ORF_type", "Transdecoder_score", "Transdecoder_ORF_length", "Transdecoder_ORF_strand",
+             "Gencode_gene_name", "Gencode_gene_type")
+blue_prot <- transdecoder[names(mergedColors)[mergedColors == "blue"], columns]
+grey_prot <- transdecoder[names(mergedColors)[mergedColors == "grey"], columns]
+turquoise_prot <- transdecoder[names(mergedColors)[mergedColors == "turquoise"], columns]
+```
+3. TMHMM, are these isoforms transmembrane? on surface? or in cell?             
+```{r}
+tmhmm <- read.table("/Volumes/Wild Flower/OV_SpliceVariants/data/4_transcoder/out_tmhmm.txt") %>% 
+  dplyr::select(V1, V3) %>% 
+  dplyr::rename(peptide_id=V1, location=V3) %>% 
+  dplyr::mutate(pb_id=gsub("\\.[^.]*$", "", peptide_id))
+tmhmm <- tmhmm %>% dplyr::group_by()
+```
+
+
+
+```{r}
+gsea_rnk <- read.csv("/Volumes/Wild Flower/OV_SpliceVariants/data/5_differential_expression/DTE_edgeR.csv", 
+                     row.names = 1)
+gsea_rnk <- merge(gsea_rnk, classifications["associated_gene"], by="row.names")
+rownames(gsea_rnk) <- gsea_rnk$Row.names
+blue_rnk <- gsea_rnk[names(mergedColors)[mergedColors == "blue"], c("associated_gene", "logFC")]
+grey_rnk <- gsea_rnk[names(mergedColors)[mergedColors == "grey"], c("associated_gene", "logFC")]
+turquoise_rnk <- gsea_rnk[names(mergedColors)[mergedColors == "turquoise"], c("associated_gene", "logFC")]
+
+## some manual editing 
+blue_rnk$associated_gene[blue_rnk$associated_gene == "ENSG00000274173"] <- "LINC02967"
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
